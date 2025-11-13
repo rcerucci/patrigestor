@@ -1,0 +1,26 @@
+{
+  "name": "patrigestor",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "vite": "^7.2.2"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.81.0",
+    "browser-image-compression": "^2.0.2",
+    "cloudinary": "^2.8.0",
+    "exceljs": "^4.4.0",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2"
+  }
+}

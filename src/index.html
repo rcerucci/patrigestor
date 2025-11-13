@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="description" content="Sistema de Gestão de Patrimônio - PatriGestor">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PatriGestor">
+
+    <title>PatriGestor | Sistema de Gestão de Patrimônio</title>
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png">
+
+    <!-- ============================= -->
+    <!--       APPLE SPLASH SCREENS    -->
+    <!-- ============================= -->
+
+    <!-- iPhone SE / 5 / 5S / 5C -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-640x1136.png"
+          media="(device-width: 320px) and (device-height: 568px)
+          and (-webkit-device-pixel-ratio: 2)">
+
+    <!-- iPhone 6/7/8 -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-750x1334.png"
+          media="(device-width: 375px) and (device-height: 667px)
+          and (-webkit-device-pixel-ratio: 2)">
+
+    <!-- iPhone 6/7/8 Plus -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-1242x2208.png"
+          media="(device-width: 414px) and (device-height: 736px)
+          and (-webkit-device-pixel-ratio: 3)">
+
+    <!-- iPhone X / XS / 11 Pro -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-1125x2436.png"
+          media="(device-width: 375px) and (device-height: 812px)
+          and (-webkit-device-pixel-ratio: 3)">
+
+    <!-- iPhone XR / 11 -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-828x1792.png"
+          media="(device-width: 414px) and (device-height: 896px)
+          and (-webkit-device-pixel-ratio: 2)">
+
+    <!-- iPhone XS Max / 11 Pro Max -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-1242x2688.png"
+          media="(device-width: 414px) and (device-height: 896px)
+          and (-webkit-device-pixel-ratio: 3)">
+
+    <!-- iPhone 12 / 12 Pro / 13 / 14 / 15 -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-1170x2532.png"
+          media="(device-width: 390px) and (device-height: 844px)
+          and (-webkit-device-pixel-ratio: 3)">
+
+    <!-- iPhone 12 Pro Max / 13 Pro Max / 14 Plus / 15 Plus -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-1284x2778.png"
+          media="(device-width: 428px) and (device-height: 926px)
+          and (-webkit-device-pixel-ratio: 3)">
+
+    <!-- iPhone 14 Pro -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-1179x2556.png"
+          media="(device-width: 393px) and (device-height: 852px)
+          and (-webkit-device-pixel-ratio: 3)">
+
+    <!-- iPhone 14 Pro Max -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-1290x2796.png"
+          media="(device-width: 430px) and (device-height: 932px)
+          and (-webkit-device-pixel-ratio: 3)">
+
+    <!-- iPad Mini / Air -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-1536x2048.png"
+          media="(device-width: 768px) and (device-height: 1024px)
+          and (-webkit-device-pixel-ratio: 2)">
+
+    <!-- iPad Pro 10.5 -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-1668x2224.png"
+          media="(device-width: 834px) and (device-height: 1112px)
+          and (-webkit-device-pixel-ratio: 2)">
+
+    <!-- iPad Pro 11" -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-1668x2388.png"
+          media="(device-width: 834px) and (device-height: 1194px)
+          and (-webkit-device-pixel-ratio: 2)">
+
+    <!-- iPad Pro 12.9" -->
+    <link rel="apple-touch-startup-image" href="/splashscreens/splash-2048x2732.png"
+          media="(device-width: 1024px) and (device-height: 1366px)
+          and (-webkit-device-pixel-ratio: 2)">
+
+    <!-- ============================= -->
+
+    <link rel="stylesheet" href="/css/style.css">
+
+    <style>
+        html {
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            overscroll-behavior-y: none;
+            position: fixed;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #app {
+            height: 100vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        button, .btn, .card, .header {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        body {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        .install-prompt {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3b82f6;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            animation: slideUp 0.3s ease;
+        }
+
+        .install-prompt.show {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Carregando...</p>
+        </div>
+    </div>
+
+    <div id="install-prompt" class="install-prompt">
+        <span>📱 Instalar app</span>
+        <button id="install-btn" style="background: white; color: #3b82f6; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600;">
+            Instalar
+        </button>
+        <button id="install-dismiss" style="background: transparent; color: white; border: none; padding: 8px; font-size: 20px;">
+            ×
+        </button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('Service Worker registrado:', registration)
+                    })
+                    .catch((error) => {
+                        console.error('Erro ao registrar Service Worker:', error)
+                    })
+            })
+        }
+
+        let deferredPrompt
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault()
+            deferredPrompt = e
+
+            const installPrompt = document.getElementById('install-prompt')
+            installPrompt.classList.add('show')
+        })
+
+        document.getElementById('install-btn')?.addEventListener('click', async () => {
+            if (!deferredPrompt) return
+
+            deferredPrompt.prompt()
+
+            const { outcome } = await deferredPrompt.userChoice
+            console.log('Install prompt:', outcome)
+
+            deferredPrompt = null
+            document.getElementById('install-prompt').classList.remove('show')
+        })
+
+        document.getElementById('install-dismiss')?.addEventListener('click', () => {
+            document.getElementById('install-prompt').classList.remove('show')
+        })
+
+        window.addEventListener('appinstalled', () => {
+            console.log('App instalado com sucesso')
+            document.getElementById('install-prompt').classList.remove('show')
+        })
+
+        document.addEventListener('gesturestart', (e) => {
+            e.preventDefault()
+        })
+
+        document.body.addEventListener('touchmove', (e) => {
+            if (document.body.scrollTop === 0 && e.touches[0].clientY > 0) {
+                e.preventDefault()
+            }
+        }, { passive: false })
+    </script>
+
+    <script type="module" src="/js/main.js"></script>
+</body>
+</html>
