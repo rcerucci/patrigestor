@@ -49,16 +49,18 @@ export async function renderListaPatrimonios() {
         </div>
 
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 class="card-title" style="margin: 0;">Lista de Patrimônios</h2>
+            <!-- Cabeçalho Responsivo -->
+            <div class="lista-header">
+                <h2 class="card-title">Lista de Patrimônios</h2>
                 ${isEditor ? 
-                    '<button class="btn btn-primary" onclick="window.appRouter.navigate(\'cadastro-patrimonio\')">+ Cadastrar Novo</button>' 
+                    '<button class="btn btn-primary btn-cadastrar" onclick="window.appRouter.navigate(\'cadastro-patrimonio\')">+ Cadastrar Novo</button>' 
                     : ''
                 }
             </div>
 
-            <div style="display: flex; gap: 20px; margin-bottom: 20px; align-items: flex-end;">
-                <div class="form-group" style="flex: 1; margin: 0;">
+            <!-- Filtros Responsivos -->
+            <div class="filtros-container">
+                <div class="form-group busca-group">
                     <label>Buscar por Placa</label>
                     <input 
                         type="text" 
@@ -69,14 +71,13 @@ export async function renderListaPatrimonios() {
                     >
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 8px;">
+                <div class="checkbox-group">
                     <input 
                         type="checkbox" 
                         id="filtro-sem-valores" 
                         onchange="aplicarFiltros()"
-                        style="width: 18px; height: 18px; cursor: pointer;"
                     >
-                    <label for="filtro-sem-valores" style="cursor: pointer; margin: 0; user-select: none;">
+                    <label for="filtro-sem-valores">
                         Mostrar apenas itens sem valores definidos
                     </label>
                 </div>
@@ -86,6 +87,122 @@ export async function renderListaPatrimonios() {
                 <div class="loading"><div class="spinner"></div><p>Carregando...</p></div>
             </div>
         </div>
+
+        <!-- Estilos Responsivos -->
+        <style>
+            /* Cabeçalho da Lista */
+            .lista-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+
+            .lista-header .card-title {
+                margin: 0;
+                font-size: 24px;
+                color: #1e3a8a;
+                flex: 1;
+                min-width: 200px;
+            }
+
+            .btn-cadastrar {
+                white-space: nowrap;
+                min-width: max-content;
+            }
+
+            /* Container de Filtros */
+            .filtros-container {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 20px;
+                align-items: flex-end;
+                flex-wrap: wrap;
+            }
+
+            .busca-group {
+                flex: 1;
+                margin: 0;
+                min-width: 200px;
+            }
+
+            .checkbox-group {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding-bottom: 8px;
+            }
+
+            .checkbox-group input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+
+            .checkbox-group label {
+                cursor: pointer;
+                margin: 0;
+                user-select: none;
+                font-size: 14px;
+            }
+
+            /* Responsividade Mobile */
+            @media (max-width: 768px) {
+                .lista-header {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 12px;
+                }
+
+                .lista-header .card-title {
+                    font-size: 20px;
+                    text-align: center;
+                    min-width: unset;
+                }
+
+                .btn-cadastrar {
+                    width: 100%;
+                    justify-content: center;
+                }
+
+                .filtros-container {
+                    flex-direction: column;
+                    gap: 15px;
+                    align-items: stretch;
+                }
+
+                .busca-group {
+                    min-width: unset;
+                }
+
+                .checkbox-group {
+                    padding-bottom: 0;
+                    flex-wrap: wrap;
+                }
+
+                .checkbox-group label {
+                    font-size: 13px;
+                    line-height: 1.4;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .lista-header .card-title {
+                    font-size: 18px;
+                }
+
+                .checkbox-group {
+                    gap: 10px;
+                }
+
+                .checkbox-group label {
+                    font-size: 12px;
+                }
+            }
+        </style>
 
         <!-- Modal Detalhes -->
         <div id="modal-detalhes-patrimonio" class="modal">
@@ -288,48 +405,46 @@ function ordenarLista(lista, campo, direcao) {
                 valorB = b.centro_custo?.nome?.toLowerCase() || ''
                 break
             default:
-                valorA = a[campo]
-                valorB = b[campo]
+                return 0
         }
         
-        if (valorA < valorB) return direcao === 'asc' ? -1 : 1
-        if (valorA > valorB) return direcao === 'asc' ? 1 : -1
-        return 0
+        if (typeof valorA === 'string') {
+            return direcao === 'asc' 
+                ? valorA.localeCompare(valorB)
+                : valorB.localeCompare(valorA)
+        }
+        
+        return direcao === 'asc' ? valorA - valorB : valorB - valorA
     })
 }
 
 window.aplicarFiltros = function() {
-    const termoBusca = document.getElementById('busca-placa').value.toLowerCase()
-    const filtroSemValores = document.getElementById('filtro-sem-valores').checked
+    const buscaPlaca = document.getElementById('busca-placa')?.value.toLowerCase() || ''
+    const filtrarSemValores = document.getElementById('filtro-sem-valores')?.checked || false
     
-    let filtrados = patrimonios
+    let listaFiltrada = patrimonios.filter(p => {
+        const matchPlaca = p.placa.toLowerCase().includes(buscaPlaca)
+        
+        if (filtrarSemValores) {
+            const semValorAtual = !p.valor_atual || parseFloat(p.valor_atual) === 0
+            const semValorMercado = !p.valor_mercado || parseFloat(p.valor_mercado) === 0
+            return matchPlaca && (semValorAtual || semValorMercado)
+        }
+        
+        return matchPlaca
+    })
     
-    if (termoBusca !== '') {
-        filtrados = filtrados.filter(p => 
-            p.placa.toLowerCase().includes(termoBusca)
-        )
-    }
+    listaFiltrada = ordenarLista(listaFiltrada, ordenacaoAtual.campo, ordenacaoAtual.direcao)
     
-    if (filtroSemValores) {
-        filtrados = filtrados.filter(p => 
-            !p.valor_atual || !p.valor_mercado
-        )
-    }
-    
-    filtrados = ordenarLista(filtrados, ordenacaoAtual.campo, ordenacaoAtual.direcao)
-    
-    renderPatrimonios(filtrados)
+    renderPatrimonios(listaFiltrada)
 }
 
-// ✅ FUNÇÃO CORRIGIDA COM CACHE BUSTING
 window.abrirDetalhesPatrimonio = async function(id) {
     try {
-        const patrimonioAtualizado = await patrimonioService.buscarPorId(id)
-        patrimonioAtual = patrimonioAtualizado
+        patrimonioAtual = patrimonios.find(p => p.id === id)
         
         if (!patrimonioAtual) {
-            alert('Patrimônio não encontrado')
-            return
+            throw new Error('Patrimônio não encontrado')
         }
 
         const detalhesContent = document.getElementById('detalhes-content')
@@ -338,7 +453,6 @@ window.abrirDetalhesPatrimonio = async function(id) {
             <div style="padding: 20px;">
                 <p><strong>Placa:</strong> ${patrimonioAtual.placa}</p>
                 <p><strong>Nome:</strong> ${patrimonioAtual.nome}</p>
-                <p><strong>Descrição:</strong> ${patrimonioAtual.descricao || '-'}</p>
                 <p><strong>Estado:</strong> ${patrimonioAtual.estado || '-'}</p>
                 <p><strong>Valor Atual:</strong> ${formatarReal(patrimonioAtual.valor_atual)}</p>
                 <p><strong>Valor de Mercado:</strong> ${formatarReal(patrimonioAtual.valor_mercado)}</p>
