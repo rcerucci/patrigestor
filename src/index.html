@@ -21,13 +21,6 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png">
 
-    <!-- ============================= -->
-    <!--       APPLE SPLASH SCREENS    -->
-    <!-- ============================= -->
-    <!-- (mantidos todos os splash screens) -->
-    <!-- iPhone SE / 5 / 5S pode ser omitido se não for necessário -->
-    <!-- ... (todos os links de splash permanecem iguais) ... -->
-
     <link rel="stylesheet" href="/css/style.css">
 
     <style>
@@ -67,24 +60,97 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: #3b82f6;
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
             color: white;
-            padding: 15px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(30, 58, 138, 0.3),
+                        0 4px 12px rgba(0, 0, 0, 0.1);
             z-index: 10000;
-            animation: slideUp 0.3s ease;
-            gap: 15px;
+            animation: slideUp 0.4s ease;
+            gap: 16px;
             align-items: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            max-width: 90%;
+            font-size: 0.9375rem;
+            font-weight: 600;
         }
 
         .install-prompt.show {
             display: flex;
         }
 
+        .install-prompt button {
+            min-height: 40px;
+            padding: 0 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        /* Botão Instalar */
+        #install-btn {
+            background: white;
+            color: #1e3a8a;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        #install-btn:hover {
+            background: #f0f4ff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        #install-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Botão Fechar (×) */
+        #install-dismiss {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            min-width: 40px;
+            padding: 0;
+        }
+
+        #install-dismiss:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        #install-dismiss:active {
+            transform: scale(0.95);
+        }
+
         @keyframes slideUp {
-            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+            from { 
+                transform: translateX(-50%) translateY(100px); 
+                opacity: 0; 
+            }
+            to { 
+                transform: translateX(-50%) translateY(0); 
+                opacity: 1; 
+            }
+        }
+
+        /* Responsividade */
+        @media (max-width: 480px) {
+            .install-prompt {
+                padding: 14px 18px;
+                font-size: 0.875rem;
+                gap: 12px;
+                bottom: 16px;
+            }
+            
+            .install-prompt button {
+                min-height: 36px;
+                padding: 0 16px;
+                font-size: 0.8125rem;
+            }
         }
     </style>
 </head>
@@ -114,31 +180,74 @@
         }
 
         let deferredPrompt;
+        
+        // Função para verificar se o app está instalado
+        function isAppInstalled() {
+            // Verifica se foi instalado anteriormente
+            if (localStorage.getItem('appInstalled') === 'true') {
+                return true;
+            }
+            
+            // Verifica se está rodando em modo standalone (app instalado)
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                localStorage.setItem('appInstalled', 'true');
+                return true;
+            }
+            
+            // Verifica se é iOS standalone
+            if (window.navigator.standalone === true) {
+                localStorage.setItem('appInstalled', 'true');
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // Função para ocultar o prompt
+        function hideInstallPrompt() {
+            document.getElementById('install-prompt').classList.remove('show');
+            localStorage.setItem('installPromptDismissed', 'true');
+        }
+        
         window.addEventListener('beforeinstallprompt', e => {
             e.preventDefault();
             deferredPrompt = e;
-            document.getElementById('install-prompt').classList.add('show');
+            
+            // Não mostra se já foi instalado ou dispensado
+            if (!isAppInstalled() && localStorage.getItem('installPromptDismissed') !== 'true') {
+                document.getElementById('install-prompt').classList.add('show');
+            }
         });
 
         document.getElementById('install-btn')?.addEventListener('click', async () => {
             if (!deferredPrompt) return;
+            
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             console.log('Install:', outcome);
+            
+            if (outcome === 'accepted') {
+                localStorage.setItem('appInstalled', 'true');
+            }
+            
             deferredPrompt = null;
-            document.getElementById('install-prompt').classList.remove('show');
+            hideInstallPrompt();
         });
 
         document.getElementById('install-dismiss')?.addEventListener('click', () => {
-            document.getElementById('install-prompt').classList.remove('show');
+            hideInstallPrompt();
         });
 
         window.addEventListener('appinstalled', () => {
             console.log('App instalado');
-            document.getElementById('install-prompt').classList.remove('show');
+            localStorage.setItem('appInstalled', 'true');
+            hideInstallPrompt();
         });
-
-        // REMOVIDO: bloqueio de touchmove
+        
+        // Verifica no carregamento se deve ocultar o prompt
+        if (isAppInstalled()) {
+            document.getElementById('install-prompt').style.display = 'none';
+        }
     </script>
 
     <script type="module" src="/js/main.js"></script>
