@@ -59,6 +59,13 @@ self.addEventListener('fetch', (event) => {
     return
   }
   
+  // NUNCA cachear a página de login ou rotas de autenticação
+  if (url.hash && (url.hash.includes('#login') || url.hash.includes('#setup-root'))) {
+    console.log('[SW] Ignorando cache para rota de autenticação:', url.hash)
+    event.respondWith(fetch(request))
+    return
+  }
+  
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -66,7 +73,13 @@ self.addEventListener('fetch', (event) => {
         const responseClone = response.clone()
         
         // Cachear apenas GET requests bem-sucedidas
-        if (request.method === 'GET' && response.status === 200) {
+        // E NÃO cachear rotas de login/autenticação
+        if (
+          request.method === 'GET' && 
+          response.status === 200 && 
+          !url.hash.includes('#login') && 
+          !url.hash.includes('#setup-root')
+        ) {
           caches.open(DYNAMIC_CACHE).then((cache) => {
             cache.put(request, responseClone)
           })

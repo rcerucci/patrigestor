@@ -4,6 +4,17 @@ import { supabase } from '../supabaseClient.js'
 import { UI } from '../ui.js'
 
 export function renderLogin() {
+    // Prevenir cache desta página
+    window.history.replaceState({ noCache: true, page: 'login' }, '', '#login')
+    
+    // Adicionar listener para pageshow (para detectar navegação via cache)
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            // Página foi carregada do cache, recarregar
+            window.location.reload()
+        }
+    })
+    
     const app = document.getElementById('app')
     
     app.innerHTML = `

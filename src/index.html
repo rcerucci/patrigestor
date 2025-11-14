@@ -9,6 +9,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="PatriGestor">
+    
+    <!-- Prevenir cache de páginas sensíveis -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 
     <title>PatriGestor | Sistema de Gestão de Patrimônio</title>
 
@@ -98,18 +103,25 @@
         html {
             overscroll-behavior: none;
             -webkit-tap-highlight-color: transparent;
+            height: 100%;
         }
 
         body {
             overscroll-behavior-y: none;
-            position: fixed;
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
         }
 
         #app {
-            height: 100vh;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -118,13 +130,6 @@
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
-        }
-
-        body {
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
         }
 
         .install-prompt {
@@ -169,7 +174,7 @@
     </div>
 
     <div id="install-prompt" class="install-prompt">
-        <span>📱 Instalar app</span>
+        <span>Instalar app</span>
         <button id="install-btn" style="background: white; color: #3b82f6; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600;">
             Instalar
         </button>
