@@ -892,3 +892,90 @@ tbody tr:nth-child(even):hover { background: var(--gray-100); }
     body { background: white; }
     .btn, .header, .modal { display: none !important; }
 }
+
+.install-prompt {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(30, 58, 138, 0.3),
+                0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    max-width: 90%;
+    animation: slideUp 0.4s ease;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.install-prompt button {
+    min-height: 40px;
+    padding: 0 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Botão Instalar */
+.install-prompt button:first-of-type {
+    background: white;
+    color: #1e3a8a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.install-prompt button:first-of-type:hover {
+    background: #f0f4ff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Botão Fechar (X) */
+.install-prompt button:last-of-type {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    min-width: 40px;
+    padding: 0;
+}
+
+.install-prompt button:last-of-type:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
+
+@keyframes slideUp {
+    from { 
+        transform: translateX(-50%) translateY(100px); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateX(-50%) translateY(0); 
+        opacity: 1; 
+    }
+}
+
+/* Responsividade */
+@media (max-width: 480px) {
+    .install-prompt {
+        padding: 14px 18px;
+        font-size: 0.875rem;
+        gap: 12px;
+        bottom: 16px;
+    }
+    
+    .install-prompt button {
+        min-height: 36px;
+        padding: 0 16px;
+        font-size: 0.8125rem;
+    }
+}
