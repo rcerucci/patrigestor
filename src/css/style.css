@@ -5,17 +5,17 @@
 }
 
 :root {
-    /* 🎨 Paleta Resultt - Assessoria Empresarial */
-    --primary: #1e3a8a;           /* Azul escuro - Confiança */
-    --primary-light: #3b82f6;     /* Azul médio - Modernidade */
+    /* ðŸŽ¨ Paleta Resultt - Assessoria Empresarial */
+    --primary: #1e3a8a;           /* Azul escuro - ConfianÃ§a */
+    --primary-light: #3b82f6;     /* Azul mÃ©dio - Modernidade */
     --primary-dark: #1e293b;      /* Azul very dark */
-    --secondary: #f59e0b;         /* Laranja - Ação/Energia */
+    --secondary: #f59e0b;         /* Laranja - AÃ§Ã£o/Energia */
     --secondary-dark: #d97706;    /* Laranja escuro */
-    --accent: #3b82f6;            /* Azul tecnológico */
+    --accent: #3b82f6;            /* Azul tecnolÃ³gico */
     --success: #10b981;           /* Verde - Sucesso */
     --danger: #ef4444;            /* Vermelho - Alerta */
-    --warning: #f59e0b;           /* Laranja - Atenção */
-    --info: #06b6d4;              /* Ciano - Informação */
+    --warning: #f59e0b;           /* Laranja - AtenÃ§Ã£o */
+    --info: #06b6d4;              /* Ciano - InformaÃ§Ã£o */
     
     /* Neutros */
     --gray-50: #f9fafb;
@@ -35,7 +35,7 @@
     --border: var(--gray-300);
     --background: var(--gray-50);
     
-    /* 📱 Variáveis Mobile-First */
+    /* ðŸ“± VariÃ¡veis Mobile-First */
     --touch-target-min: 44px;     /* Apple/Google HIG */
     --spacing-xs: 4px;
     --spacing-sm: 8px;
@@ -67,14 +67,36 @@ body {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
     min-height: 100vh;
     color: var(--text-primary);
-    font-size: 16px; /* ✅ CRÍTICO: Evita zoom no iOS */
+    font-size: 16px; /* âœ… CRÃTICO: Evita zoom no iOS */
     line-height: 1.5;
     
-    /* ✅ Otimizações Touch */
+    /* âœ… OtimizaÃ§Ãµes Touch */
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     touch-action: manipulation;
     overscroll-behavior-y: none;
+}
+
+/* ===== FORÃ‡AR SCROLL MOBILE ===== */
+body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: relative !important;
+    height: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+html {
+    overflow: visible !important;
+}
+
+#app {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    position: relative !important;
+    height: auto !important;
+    min-height: 100vh !important;
 }
 
 *:focus {
@@ -596,7 +618,7 @@ input[inputmode="numeric"] {
 
 @media (hover: none) and (pointer: coarse) {
     .photo-preview::after {
-        content: '📷';
+        content: 'ðŸ“·';
         position: absolute;
         bottom: 8px;
         right: 8px;
