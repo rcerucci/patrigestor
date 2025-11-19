@@ -11,6 +11,9 @@ let carrosselAtual = {
     indiceAtual: 0
 }
 
+// ✅ CONTROLE PARA INTERCEPTAR BOTÃO VOLTAR
+let modalAberto = false
+
 // Função para formatar valor em Real
 function formatarReal(valor) {
     if (!valor) return '-'
@@ -26,6 +29,123 @@ function adicionarTimestamp(url) {
     const timestamp = new Date().getTime()
     const separator = url.includes('?') ? '&' : '?'
     return `${url}${separator}t=${timestamp}`
+}
+
+// ✅ INTERCEPTAR BOTÃO VOLTAR DO NAVEGADOR/APP
+function configurarInterceptacaoVoltar() {
+    window.addEventListener('popstate', function(event) {
+        if (modalAberto) {
+            event.preventDefault()
+            fecharTodosModais()
+            history.pushState(null, '', window.location.href)
+        }
+    })
+    
+    // Adicionar estado inicial
+    history.pushState(null, '', window.location.href)
+}
+
+function fecharTodosModais() {
+    const modalCarrossel = document.getElementById('modal-carrossel')
+    const modalDetalhes = document.getElementById('modal-detalhes-patrimonio')
+    
+    if (modalCarrossel && modalCarrossel.style.display === 'flex') {
+        fecharCarrossel()
+    } else if (modalDetalhes && modalDetalhes.classList.contains('show')) {
+        fecharModalPatrimonio()
+    }
+}
+
+// ✅ FUNÇÃO PARA INICIAR SCANNER
+async function iniciarScanner() {
+    try {
+        // Verificar se tem suporte a câmera
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('Seu dispositivo não suporta acesso à câmera')
+            return
+        }
+
+        // Criar modal do scanner
+        const modalScanner = document.createElement('div')
+        modalScanner.id = 'modal-scanner'
+        modalScanner.className = 'modal'
+        modalScanner.style.display = 'flex'
+        modalScanner.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3>📷 Scanner de Código</h3>
+                    <span class="modal-close" onclick="fecharScanner()">×</span>
+                </div>
+                <div style="padding: 20px;">
+                    <div id="scanner-container" style="position: relative; width: 100%; aspect-ratio: 1;">
+                        <video id="scanner-video" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;"></video>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 2px solid #3498db; border-radius: 8px;"></div>
+                    </div>
+                    <p style="text-align: center; margin-top: 15px; color: #7f8c8d;">
+                        Posicione o código de barras na área marcada
+                    </p>
+                </div>
+            </div>
+        `
+        document.body.appendChild(modalScanner)
+
+        // Importar biblioteca de scanner (Quagga para código de barras)
+        if (!window.Quagga) {
+            const script = document.createElement('script')
+            script.src = 'https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js'
+            document.head.appendChild(script)
+            
+            await new Promise((resolve, reject) => {
+                script.onload = resolve
+                script.onerror = () => reject(new Error('Erro ao carregar biblioteca de scanner'))
+            })
+        }
+
+        // Iniciar scanner
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#scanner-video'),
+                constraints: {
+                    facingMode: "environment"
+                }
+            },
+            decoder: {
+                readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "upc_reader"]
+            }
+        }, function(err) {
+            if (err) {
+                console.error(err)
+                alert('Erro ao iniciar câmera: ' + err.message)
+                fecharScanner()
+                return
+            }
+            Quagga.start()
+        })
+
+        // Detectar código
+        Quagga.onDetected(function(result) {
+            const code = result.codeResult.code
+            document.getElementById('busca-placa').value = code
+            aplicarFiltros()
+            fecharScanner()
+        })
+
+    } catch (error) {
+        console.error('Erro no scanner:', error)
+        alert('Erro ao abrir scanner: ' + error.message)
+    }
+}
+
+window.fecharScanner = function() {
+    if (window.Quagga) {
+        Quagga.stop()
+    }
+    const modal = document.getElementById('modal-scanner')
+    if (modal) {
+        modal.remove()
+    }
 }
 
 export async function renderListaPatrimonios() {
@@ -62,13 +182,31 @@ export async function renderListaPatrimonios() {
             <div class="filtros-container">
                 <div class="form-group busca-group">
                     <label>Buscar por Placa</label>
-                    <input 
-                        type="text" 
-                        class="form-control" 
-                        id="busca-placa" 
-                        placeholder="Digite a placa..."
-                        onkeyup="aplicarFiltros()"
-                    >
+                    <div style="display: flex; gap: 8px;">
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="busca-placa" 
+                            placeholder="Digite a placa..."
+                            onkeyup="aplicarFiltros()"
+                            style="flex: 1;"
+                        >
+                        <button 
+                            class="btn btn-secondary" 
+                            onclick="iniciarScanner()"
+                            style="padding: 8px 16px; display: flex; align-items: center; gap: 5px; white-space: nowrap;"
+                            title="Scanner de Código de Barras"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="2" height="16"/>
+                                <rect x="7" y="4" width="1" height="16"/>
+                                <rect x="10" y="4" width="2" height="16"/>
+                                <rect x="14" y="4" width="1" height="16"/>
+                                <rect x="17" y="4" width="3" height="16"/>
+                            </svg>
+                            <span class="scanner-text">Scanner</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="checkbox-group">
@@ -187,6 +325,10 @@ export async function renderListaPatrimonios() {
                     font-size: 13px;
                     line-height: 1.4;
                 }
+
+                .scanner-text {
+                    display: none;
+                }
             }
 
             @media (max-width: 480px) {
@@ -287,6 +429,9 @@ export async function renderListaPatrimonios() {
     
     // Adicionar listener para teclas do carrossel
     document.addEventListener('keydown', handleCarrosselKeyboard)
+    
+    // ✅ CONFIGURAR INTERCEPTAÇÃO DO BOTÃO VOLTAR
+    configurarInterceptacaoVoltar()
 }
 
 async function carregarPatrimonios() {
@@ -371,6 +516,8 @@ function renderPatrimonios(lista) {
         </div>
     `
 }
+
+window.iniciarScanner = iniciarScanner
 
 window.ordenarPor = function(campo) {
     if (ordenacaoAtual.campo === campo) {
@@ -470,6 +617,7 @@ window.abrirDetalhesPatrimonio = async function(id) {
                 <p><strong>Placa:</strong> ${patrimonioAtual.placa}</p>
                 <p><strong>Nome:</strong> ${patrimonioAtual.nome}</p>
                 <p><strong>Estado:</strong> ${patrimonioAtual.estado || '-'}</p>
+                <p><strong>Descrição:</strong> ${patrimonioAtual.descricao || '-'}</p>
                 <p><strong>Valor Atual:</strong> ${formatarReal(patrimonioAtual.valor_atual)}</p>
                 <p><strong>Valor de Mercado:</strong> ${formatarReal(patrimonioAtual.valor_mercado)}</p>
                 <p><strong>Centro de Custo:</strong> ${patrimonioAtual.centro_custo?.nome || '-'}</p>
@@ -514,6 +662,7 @@ window.abrirDetalhesPatrimonio = async function(id) {
             </div>
         `
 
+        modalAberto = true
         UI.showModal('modal-detalhes-patrimonio')
         
     } catch (error) {
@@ -542,6 +691,7 @@ window.abrirCarrossel = function(indiceInicial) {
     carrosselAtual.indiceAtual = indiceInicial
     
     // Mostrar modal
+    modalAberto = true
     document.getElementById('modal-carrossel').style.display = 'flex'
     
     // Atualizar carrossel
@@ -549,6 +699,7 @@ window.abrirCarrossel = function(indiceInicial) {
 }
 
 window.fecharCarrossel = function() {
+    modalAberto = false
     document.getElementById('modal-carrossel').style.display = 'none'
 }
 
@@ -599,6 +750,7 @@ function handleCarrosselKeyboard(e) {
 }
 
 window.fecharModalPatrimonio = function() {
+    modalAberto = false
     UI.hideModal('modal-detalhes-patrimonio')
     patrimonioAtual = null
 }
@@ -606,6 +758,7 @@ window.fecharModalPatrimonio = function() {
 window.editarPatrimonioModal = function() {
     if (!patrimonioAtual) return
     
+    modalAberto = false
     UI.hideModal('modal-detalhes-patrimonio')
     window.appRouter.navigate('editar-patrimonio', patrimonioAtual.id)
 }
@@ -629,6 +782,8 @@ window.confirmarExclusaoPatrimonio = async function() {
         
         UI.hideModal('modal-confirmar-exclusao-patrimonio')
         UI.hideModal('modal-detalhes-patrimonio')
+        
+        modalAberto = false
         
         await carregarPatrimonios()
         
