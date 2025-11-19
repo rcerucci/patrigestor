@@ -18,7 +18,6 @@ let foto1UrlOriginal = null
 let foto2UrlOriginal = null
 let foto3UrlOriginal = null
 
-// Função para formatar moeda para exibição
 function formatarMoeda(valor) {
     if (!valor) return ''
     const numero = parseFloat(valor)
@@ -26,7 +25,15 @@ function formatarMoeda(valor) {
     return numero.toFixed(2).replace('.', ',')
 }
 
-// Função para aplicar máscara de moeda
+function posicionarCursorDireita(e) {
+    const input = e.target
+    const valor = input.value
+    
+    setTimeout(() => {
+        input.setSelectionRange(valor.length, valor.length)
+    }, 0)
+}
+
 function aplicarMascaraMoeda(e) {
     let valor = e.target.value.replace(/\D/g, '')
     
@@ -53,13 +60,11 @@ function aplicarMascaraMoeda(e) {
     e.target.value = partes.join(',')
 }
 
-// Função para converter moeda formatada para decimal
 function converterMoedaParaDecimal(valor) {
     if (!valor) return null
     return parseFloat(valor.replace(/\./g, '').replace(',', '.'))
 }
 
-// Função auxiliar para adicionar timestamp (cache busting)
 function adicionarTimestamp(url) {
     if (!url) return null
     const timestamp = new Date().getTime()
@@ -82,12 +87,10 @@ export async function renderEditarPatrimonio(patrimonioId) {
             throw new Error('Patrimônio não encontrado')
         }
 
-        // Salvar URLs originais
         foto1UrlOriginal = patrimonioAtual.foto1_url
         foto2UrlOriginal = patrimonioAtual.foto2_url
         foto3UrlOriginal = patrimonioAtual.foto3_url
 
-        // Reset das flags
         foto1Alterada = false
         foto2Alterada = false
         foto3Alterada = false
@@ -115,7 +118,6 @@ export async function renderEditarPatrimonio(patrimonioId) {
                 <div id="edicao-alert"></div>
 
                 <form id="edicao-form">
-                    <!-- CSS Grid Responsivo -->
                     <style>
                         .form-grid-2 {
                             display: grid;
@@ -123,7 +125,6 @@ export async function renderEditarPatrimonio(patrimonioId) {
                             gap: 20px;
                         }
                         
-                        /* Mobile: manter 2 colunas mas ajustar espaçamentos */
                         @media (max-width: 768px) {
                             .form-grid-2 {
                                 gap: 10px;
@@ -158,7 +159,6 @@ export async function renderEditarPatrimonio(patrimonioId) {
                         }
                     </style>
 
-                    <!-- Placa (readonly) -->
                     <div class="form-group">
                         <label>Placa *</label>
                         <input 
@@ -167,12 +167,11 @@ export async function renderEditarPatrimonio(patrimonioId) {
                             id="placa" 
                             value="${patrimonioAtual.placa}" 
                             readonly 
-                            style="background-color: #f3f4f6; cursor: not-allowed;"
+                            style="background-color: #f3f4f6; cursor: not-allowed; font-weight: bold; font-size: 16px;"
                         >
                         <small style="color: #6b7280;">⚠️ A placa não pode ser alterada</small>
                     </div>
 
-                    <!-- Nome -->
                     <div class="form-group">
                         <label>Nome *</label>
                         <input 
@@ -185,9 +184,7 @@ export async function renderEditarPatrimonio(patrimonioId) {
                         >
                     </div>
 
-                    <!-- LINHA 1: Valores (2 colunas) -->
                     <div class="form-grid-2">
-                        <!-- Valor Atual -->
                         <div class="form-group">
                             <label>Valor Atual</label>
                             <div style="position: relative;">
@@ -205,7 +202,6 @@ export async function renderEditarPatrimonio(patrimonioId) {
                             </div>
                         </div>
 
-                        <!-- Valor de Mercado -->
                         <div class="form-group">
                             <label>Valor de Mercado</label>
                             <div style="position: relative;">
@@ -224,9 +220,7 @@ export async function renderEditarPatrimonio(patrimonioId) {
                         </div>
                     </div>
 
-                    <!-- LINHA 2: Estado e Centro de Custo (2 colunas) -->
                     <div class="form-grid-2">
-                        <!-- Estado -->
                         <div class="form-group">
                             <label>Estado</label>
                             <select class="form-control" id="estado">
@@ -238,7 +232,6 @@ export async function renderEditarPatrimonio(patrimonioId) {
                             </select>
                         </div>
 
-                        <!-- Centro de Custo -->
                         <div class="form-group">
                             <label>Centro de Custo</label>
                             <select class="form-control" id="centro_custo_id">
@@ -252,9 +245,7 @@ export async function renderEditarPatrimonio(patrimonioId) {
                         </div>
                     </div>
 
-                    <!-- LINHA 3: Depreciação e Unidade (2 colunas) -->
                     <div class="form-grid-2">
-                        <!-- Depreciação -->
                         <div class="form-group">
                             <label>Depreciação</label>
                             <select class="form-control" id="depreciacao_id">
@@ -267,7 +258,6 @@ export async function renderEditarPatrimonio(patrimonioId) {
                             </select>
                         </div>
 
-                        <!-- Unidade -->
                         <div class="form-group">
                             <label>Unidade</label>
                             <select class="form-control" id="unidade_id">
@@ -281,119 +271,104 @@ export async function renderEditarPatrimonio(patrimonioId) {
                         </div>
                     </div>
 
-                    <!-- Descrição (campo grande) -->
                     <div class="form-group">
                         <label>Descrição</label>
                         <textarea 
                             class="form-control" 
                             id="descricao" 
                             rows="3"
+                            autocomplete="off"
                         >${patrimonioAtual.descricao || ''}</textarea>
                     </div>
 
-                    <!-- Fotos -->
                     <div class="form-group">
-                        <label>Fotos do Patrimônio</label>
-                        <p style="font-size: 12px; color: #6b7280; margin-bottom: 10px;">
-                            💡 Clique na foto para substituir. Deixe em branco para manter a foto atual.
-                        </p>
-                        <div class="photo-upload-grid">
-                            <!-- Foto 1 -->
-                            <div class="photo-upload-item">
-                                <div class="photo-preview" id="preview1" onclick="document.getElementById('foto1').click()">
-                                    ${patrimonioAtual.foto1_url 
-                                        ? `<img src="${adicionarTimestamp(patrimonioAtual.foto1_url)}" alt="Foto 1">`
-                                        : '<span class="photo-preview-placeholder">📷</span>'
-                                    }
-                                </div>
-                                <input 
-                                    type="file" 
-                                    id="foto1" 
-                                    accept="image/*" 
-                                    capture="environment"
-                                    style="display: none;"
-                                >
-                                <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">
-                                    <p style="font-size: 12px; flex: 1; margin: 0; color: #6b7280;">Foto 1</p>
-                                    ${patrimonioAtual.foto1_url 
-                                        ? '<button type="button" class="btn btn-danger btn-small" onclick="removerFoto(1)">🗑️</button>'
-                                        : ''
-                                    }
-                                </div>
+                        <label>Fotos</label>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                            <div style="position: relative;">
+                                <label class="photo-upload">
+                                    <input type="file" id="foto1" accept="image/*" capture="environment" style="display: none;">
+                                    <div class="photo-preview" id="preview1">
+                                        ${patrimonioAtual.foto1_url 
+                                            ? `<img src="${adicionarTimestamp(patrimonioAtual.foto1_url)}" alt="Foto 1">`
+                                            : '<span style="font-size: 32px;">📷</span><span style="font-size: 12px; margin-top: 5px;">Foto 1</span>'
+                                        }
+                                    </div>
+                                </label>
+                                ${patrimonioAtual.foto1_url ? `
+                                    <button type="button" onclick="removerFoto(1)" 
+                                        style="position: absolute; top: 5px; right: 5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                                        ×
+                                    </button>
+                                ` : ''}
                             </div>
 
-                            <!-- Foto 2 -->
-                            <div class="photo-upload-item">
-                                <div class="photo-preview" id="preview2" onclick="document.getElementById('foto2').click()">
-                                    ${patrimonioAtual.foto2_url 
-                                        ? `<img src="${adicionarTimestamp(patrimonioAtual.foto2_url)}" alt="Foto 2">`
-                                        : '<span class="photo-preview-placeholder">📷</span>'
-                                    }
-                                </div>
-                                <input 
-                                    type="file" 
-                                    id="foto2" 
-                                    accept="image/*" 
-                                    capture="environment"
-                                    style="display: none;"
-                                >
-                                <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">
-                                    <p style="font-size: 12px; flex: 1; margin: 0; color: #6b7280;">Foto 2</p>
-                                    ${patrimonioAtual.foto2_url 
-                                        ? '<button type="button" class="btn btn-danger btn-small" onclick="removerFoto(2)">🗑️</button>'
-                                        : ''
-                                    }
-                                </div>
+                            <div style="position: relative;">
+                                <label class="photo-upload">
+                                    <input type="file" id="foto2" accept="image/*" capture="environment" style="display: none;">
+                                    <div class="photo-preview" id="preview2">
+                                        ${patrimonioAtual.foto2_url 
+                                            ? `<img src="${adicionarTimestamp(patrimonioAtual.foto2_url)}" alt="Foto 2">`
+                                            : '<span style="font-size: 32px;">📷</span><span style="font-size: 12px; margin-top: 5px;">Foto 2</span>'
+                                        }
+                                    </div>
+                                </label>
+                                ${patrimonioAtual.foto2_url ? `
+                                    <button type="button" onclick="removerFoto(2)" 
+                                        style="position: absolute; top: 5px; right: 5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                                        ×
+                                    </button>
+                                ` : ''}
                             </div>
 
-                            <!-- Foto 3 -->
-                            <div class="photo-upload-item">
-                                <div class="photo-preview" id="preview3" onclick="document.getElementById('foto3').click()">
-                                    ${patrimonioAtual.foto3_url 
-                                        ? `<img src="${adicionarTimestamp(patrimonioAtual.foto3_url)}" alt="Foto 3">`
-                                        : '<span class="photo-preview-placeholder">📷</span>'
-                                    }
-                                </div>
-                                <input 
-                                    type="file" 
-                                    id="foto3" 
-                                    accept="image/*" 
-                                    capture="environment"
-                                    style="display: none;"
-                                >
-                                <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">
-                                    <p style="font-size: 12px; flex: 1; margin: 0; color: #6b7280;">Foto 3</p>
-                                    ${patrimonioAtual.foto3_url 
-                                        ? '<button type="button" class="btn btn-danger btn-small" onclick="removerFoto(3)">🗑️</button>'
-                                        : ''
-                                    }
-                                </div>
+                            <div style="position: relative;">
+                                <label class="photo-upload">
+                                    <input type="file" id="foto3" accept="image/*" capture="environment" style="display: none;">
+                                    <div class="photo-preview" id="preview3">
+                                        ${patrimonioAtual.foto3_url 
+                                            ? `<img src="${adicionarTimestamp(patrimonioAtual.foto3_url)}" alt="Foto 3">`
+                                            : '<span style="font-size: 32px;">📷</span><span style="font-size: 12px; margin-top: 5px;">Foto 3</span>'
+                                        }
+                                    </div>
+                                </label>
+                                ${patrimonioAtual.foto3_url ? `
+                                    <button type="button" onclick="removerFoto(3)" 
+                                        style="position: absolute; top: 5px; right: 5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                                        ×
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button type="submit" class="btn btn-success" style="flex: 1; min-width: 200px;">💾 Salvar Alterações</button>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-primary" style="flex: 1;">💾 Salvar Alterações</button>
                         <button type="button" class="btn btn-secondary" onclick="window.appRouter.navigate('lista-patrimonios')">Cancelar</button>
                     </div>
                 </form>
             </div>
         `
 
-        // Adicionar máscaras de moeda
-        document.getElementById('valor_atual').addEventListener('input', aplicarMascaraMoeda)
-        document.getElementById('valor_mercado').addEventListener('input', aplicarMascaraMoeda)
+        const valorAtualInput = document.getElementById('valor_atual')
+        const valorMercadoInput = document.getElementById('valor_mercado')
+        
+        valorAtualInput.addEventListener('input', aplicarMascaraMoeda)
+        valorMercadoInput.addEventListener('input', aplicarMascaraMoeda)
+        
+        valorAtualInput.addEventListener('focus', posicionarCursorDireita)
+        valorMercadoInput.addEventListener('focus', posicionarCursorDireita)
 
-        // Handlers de fotos
         document.getElementById('foto1').addEventListener('change', (e) => handlePhotoSelect(e, 'preview1', 1))
         document.getElementById('foto2').addEventListener('change', (e) => handlePhotoSelect(e, 'preview2', 2))
         document.getElementById('foto3').addEventListener('change', (e) => handlePhotoSelect(e, 'preview3', 3))
         
-        // Handler do formulário
         document.getElementById('edicao-form').addEventListener('submit', handleEdicao)
         
-        // ✅ Navegação com Enter
         setupEnterNavigation()
+        
+        setTimeout(() => {
+            document.getElementById('nome').focus()
+            document.getElementById('nome').select()
+        }, 100)
 
     } catch (error) {
         console.error('Erro ao carregar patrimônio:', error)
@@ -402,46 +377,44 @@ export async function renderEditarPatrimonio(patrimonioId) {
     }
 }
 
-// ✅ Navegação com Enter entre campos
 function setupEnterNavigation() {
-    const fields = [
-        'nome',
-        'descricao',
-        'valor_atual',
-        'valor_mercado',
-        'estado',
-        'centro_custo_id'
-    ]
-    
-    fields.forEach((fieldId, index) => {
-        const field = document.getElementById(fieldId)
-        if (!field) return
-        
+    document.querySelectorAll('.form-control, select').forEach((field, index, fields) => {
         field.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && field.tagName !== 'TEXTAREA') {
                 e.preventDefault()
                 
-                const nextIndex = index + 1
-                if (nextIndex < fields.length) {
-                    const nextField = document.getElementById(fields[nextIndex])
-                    if (nextField) {
-                        nextField.focus()
-                        if (nextField.type === 'text' || nextField.type === 'number') {
-                            nextField.select()
+                let nextIndex = index + 1
+                while (nextIndex < fields.length) {
+                    const nextField = fields[nextIndex]
+                    if (nextField.offsetParent !== null && !nextField.disabled && !nextField.readOnly) {
+                        if (nextField.id.startsWith('foto')) {
+                            nextField.click()
+                            return
+                        } else {
+                            nextField.focus()
+                            if (nextField.select) {
+                                nextField.select()
+                            }
+                            return
                         }
                     }
-                } else {
-                    document.querySelector('button[type="submit"]').focus()
+                    nextIndex++
                 }
+                
+                document.querySelector('button[type="submit"]').focus()
             }
         })
     })
 }
 
 function handlePhotoSelect(event, previewId, fotoNum) {
+    console.log(`📷 handlePhotoSelect chamada - Foto ${fotoNum}`)
+    
     const file = event.target.files[0]
+    console.log('Arquivo selecionado:', file)
+    
     if (file) {
-        console.log(`📸 Foto ${fotoNum} selecionada:`, file.name)
+        console.log(`✅ Foto ${fotoNum} salva:`, file.name, file.size, 'bytes')
         
         if (fotoNum === 1) {
             foto1File = file
@@ -458,9 +431,15 @@ function handlePhotoSelect(event, previewId, fotoNum) {
 
         const reader = new FileReader()
         reader.onload = (e) => {
+            console.log(`🖼️ Preview da foto ${fotoNum} gerado`)
             document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" alt="Preview">`
         }
+        reader.onerror = (err) => {
+            console.error(`❌ Erro ao ler foto ${fotoNum}:`, err)
+        }
         reader.readAsDataURL(file)
+    } else {
+        console.warn(`⚠️ Nenhum arquivo selecionado para foto ${fotoNum}`)
     }
 }
 
@@ -472,17 +451,17 @@ window.removerFoto = function(fotoNum) {
     if (fotoNum === 1) {
         foto1File = null
         foto1Alterada = true
-        document.getElementById('preview1').innerHTML = '<span class="photo-preview-placeholder">📷</span>'
+        document.getElementById('preview1').innerHTML = '<span style="font-size: 32px;">📷</span><span style="font-size: 12px; margin-top: 5px;">Foto 1</span>'
     }
     if (fotoNum === 2) {
         foto2File = null
         foto2Alterada = true
-        document.getElementById('preview2').innerHTML = '<span class="photo-preview-placeholder">📷</span>'
+        document.getElementById('preview2').innerHTML = '<span style="font-size: 32px;">📷</span><span style="font-size: 12px; margin-top: 5px;">Foto 2</span>'
     }
     if (fotoNum === 3) {
         foto3File = null
         foto3Alterada = true
-        document.getElementById('preview3').innerHTML = '<span class="photo-preview-placeholder">📷</span>'
+        document.getElementById('preview3').innerHTML = '<span style="font-size: 32px;">📷</span><span style="font-size: 12px; margin-top: 5px;">Foto 3</span>'
     }
 }
 
@@ -511,7 +490,6 @@ async function handleEdicao(e) {
         console.log('Foto 2 alterada?', foto2Alterada)
         console.log('Foto 3 alterada?', foto3Alterada)
 
-        // Processar foto 1
         if (foto1Alterada) {
             if (foto1File) {
                 alertDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>📸 Atualizando foto 1...</p></div>'
@@ -522,7 +500,6 @@ async function handleEdicao(e) {
                 updates.foto1_url = await uploadImage(foto1File, placa, 1)
                 console.log('✅ Foto 1 URL:', updates.foto1_url)
             } else {
-                // Remover foto
                 if (foto1UrlOriginal) {
                     await deleteImage(foto1UrlOriginal)
                 }
@@ -531,7 +508,6 @@ async function handleEdicao(e) {
             }
         }
 
-        // Processar foto 2
         if (foto2Alterada) {
             if (foto2File) {
                 alertDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>📸 Atualizando foto 2...</p></div>'
@@ -550,7 +526,6 @@ async function handleEdicao(e) {
             }
         }
 
-        // Processar foto 3
         if (foto3Alterada) {
             if (foto3File) {
                 alertDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>📸 Atualizando foto 3...</p></div>'
