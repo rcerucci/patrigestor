@@ -339,6 +339,12 @@ function renderPatrimonios(lista) {
                         <th onclick="ordenarPor('centro_custo')" style="cursor: pointer; user-select: none;" title="Clique para ordenar">
                             Centro de Custo ${getIconeOrdenacao('centro_custo')}
                         </th>
+                        <th onclick="ordenarPor('depreciacao')" style="cursor: pointer; user-select: none;" title="Clique para ordenar">
+                            Depreciação ${getIconeOrdenacao('depreciacao')}
+                        </th>
+                        <th onclick="ordenarPor('unidade')" style="cursor: pointer; user-select: none;" title="Clique para ordenar">
+                            Unidade ${getIconeOrdenacao('unidade')}
+                        </th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -351,6 +357,8 @@ function renderPatrimonios(lista) {
                             <td>${formatarReal(p.valor_atual)}</td>
                             <td>${formatarReal(p.valor_mercado)}</td>
                             <td>${p.centro_custo?.nome || '-'}</td>
+                            <td>${p.depreciacao?.nome || '-'}</td>
+                            <td>${p.unidade?.nome || '-'}</td>
                             <td>
                                 <button class="btn btn-primary btn-small" onclick="abrirDetalhesPatrimonio('${p.id}')">
                                     Ver Detalhes
@@ -403,6 +411,14 @@ function ordenarLista(lista, campo, direcao) {
             case 'centro_custo':
                 valorA = a.centro_custo?.nome?.toLowerCase() || ''
                 valorB = b.centro_custo?.nome?.toLowerCase() || ''
+                break
+            case 'depreciacao':
+                valorA = a.depreciacao?.nome?.toLowerCase() || ''
+                valorB = b.depreciacao?.nome?.toLowerCase() || ''
+                break
+            case 'unidade':
+                valorA = a.unidade?.nome?.toLowerCase() || ''
+                valorB = b.unidade?.nome?.toLowerCase() || ''
                 break
             default:
                 return 0
@@ -457,6 +473,8 @@ window.abrirDetalhesPatrimonio = async function(id) {
                 <p><strong>Valor Atual:</strong> ${formatarReal(patrimonioAtual.valor_atual)}</p>
                 <p><strong>Valor de Mercado:</strong> ${formatarReal(patrimonioAtual.valor_mercado)}</p>
                 <p><strong>Centro de Custo:</strong> ${patrimonioAtual.centro_custo?.nome || '-'}</p>
+                <p><strong>Depreciação:</strong> ${patrimonioAtual.depreciacao?.nome || '-'}</p>
+                <p><strong>Unidade:</strong> ${patrimonioAtual.unidade?.nome || '-'}</p>
                 <p><strong>Cadastrado em:</strong> ${new Date(patrimonioAtual.created_at).toLocaleDateString('pt-BR')}</p>
                 <p><strong>Cadastrado por:</strong> ${patrimonioAtual.created_by_user?.nome || '-'}</p>
 

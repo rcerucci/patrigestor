@@ -85,6 +85,8 @@ export const patrimonioService = {
             .select(`
                 *,
                 centro_custo:centro_de_custo(id, nome),
+                depreciacao:depreciacao(id, nome),
+                unidade:unidades(id, nome, cnpj, logo_url),
                 created_by_user:usuarios!patrimonios_created_by_fkey(nome)
             `)
             .order('created_at', { ascending: false })
@@ -99,6 +101,8 @@ export const patrimonioService = {
             .select(`
                 *,
                 centro_custo:centro_de_custo(id, nome),
+                depreciacao:depreciacao(id, nome),
+                unidade:unidades(id, nome, cnpj, logo_url),
                 created_by_user:usuarios!patrimonios_created_by_fkey(nome)
             `)
             .eq('id', id)

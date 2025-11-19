@@ -10,7 +10,21 @@ import { renderEditarPatrimonio } from './pages/editarPatrimonio.js'
 import { renderRelatorios } from './pages/relatorios.js'
 import { renderGerenciarUsuarios } from './pages/gerenciarUsuarios.js'
 import { renderGerenciarCentros } from './pages/gerenciarCentros.js'
+import { renderGerenciarDepreciacoes } from './pages/gerenciarDepreciacoes.js'
+import { renderGerenciarUnidades } from './pages/gerenciarUnidades.js'
 import { renderGerenciarRoot } from './pages/gerenciarRoot.js'
+
+/**
+ * ✅ ROUTER SIMPLIFICADO v2.0
+ * 
+ * Sistema de navegação de 2 níveis:
+ * - Nível 1: Login / Setup Root / Dashboard Principal / Gerenciar Root
+ * - Nível 2: Todas as outras páginas (cadastro, lista, editar, relatórios, etc)
+ * 
+ * Regra: Sempre que pressionar VOLTAR em uma página de Nível 2, vai para o Dashboard (Nível 1)
+ * 
+ * Modais: Gerenciados pelo modalManager.js (intercepta voltar para fechar modais)
+ */
 
 class Router {
     constructor() {
@@ -24,6 +38,8 @@ class Router {
             'relatorios': renderRelatorios,
             'gerenciar-usuarios': renderGerenciarUsuarios,
             'gerenciar-centros': renderGerenciarCentros,
+            'gerenciar-depreciacoes': renderGerenciarDepreciacoes,
+            'gerenciar-unidades': renderGerenciarUnidades,
             'gerenciar-root': renderGerenciarRoot
         }
 
@@ -31,14 +47,25 @@ class Router {
         this.isNavigating = false
         this.authStateChangeInProgress = false
         this.initialized = false
-        this.navigationHistory = []
-        this.protectedRoutes = ['dashboard', 'cadastro-patrimonio', 'lista-patrimonios', 
-                                'editar-patrimonio', 'relatorios', 'gerenciar-usuarios', 
-                                'gerenciar-centros', 'gerenciar-root']
+        
+        // ✅ Rotas de Nível 1 (principais) - não podem usar voltar
+        this.nivel1Routes = ['login', 'setup-root', 'dashboard', 'gerenciar-root']
+        
+        // ✅ Rotas de Nível 2 (secundárias) - sempre voltam para dashboard
+        this.nivel2Routes = [
+            'cadastro-patrimonio',
+            'lista-patrimonios',
+            'editar-patrimonio',
+            'relatorios',
+            'gerenciar-usuarios',
+            'gerenciar-centros',
+            'gerenciar-depreciacoes',
+            'gerenciar-unidades'
+        ]
     }
 
     async init() {
-        console.log('🚀 Inicializando router...')
+        console.log('🚀 Inicializando router simplificado v2.0...')
 
         const existeRoot = await rootService.existeRoot()
 
@@ -86,8 +113,6 @@ class Router {
             // Logout
             if (event === 'SIGNED_OUT' && this.currentRoute !== 'login' && this.currentRoute !== 'setup-root') {
                 console.log('🔓 Logout detectado, redirecionando para login')
-                // Limpar histórico ao fazer logout
-                this.navigationHistory = []
                 this.navigate('login', {}, true)
                 return
             }
@@ -109,90 +134,111 @@ class Router {
         })
     }
 
-    // Interceptar botão voltar do sistema (Android/iOS/Browser)
+    /**
+     * ✅ HANDLER DO BOTÃO VOLTAR SIMPLIFICADO
+     * 
+     * Sistema de 2 níveis:
+     * - Se estiver em rota de Nível 1 (login, dashboard, etc): BLOQUEIA o voltar
+     * - Se estiver em rota de Nível 2 (cadastro, lista, etc): VOLTA para dashboard
+     * - Modais são tratados pelo modalManager.js
+     */
     setupBackButtonHandler() {
-        // Substituir estado inicial para prevenir cache do login
+        console.log('🔙 Configurando handler do botão voltar simplificado...')
+        
+        // Substituir estado inicial para prevenir cache
         if (window.history.state === null) {
-            window.history.replaceState({ route: 'login', canGoBack: false }, '', '#login')
+            window.history.replaceState(
+                { route: 'login', nivel: 1, canGoBack: false },
+                '',
+                '#login'
+            )
         }
 
         window.addEventListener('popstate', async (event) => {
             console.log('⬅️ Botão voltar pressionado')
-            console.log('Estado atual:', event.state)
-            console.log('Rota atual:', this.currentRoute)
+            console.log('📍 Rota atual:', this.currentRoute)
+            console.log('📊 Estado:', event.state)
             
-            // Obter usuário atual
-            const user = await auth.getCurrentUser()
-            
-            // Se tentar voltar para um estado sem permissão de voltar
-            if (event.state && event.state.canGoBack === false) {
-                console.log('🚫 Bloqueado pelo estado - não pode voltar mais')
-                await this.goToDefaultRoute()
+            // ✅ Se há modais abertos, o modalManager vai lidar com isso
+            // Não fazemos nada aqui para não interferir
+            if (window.modalManager && window.modalManager.modalStack.length > 0) {
+                console.log('🎭 Modal aberto detectado - deixando modalManager lidar')
                 return
             }
             
-            // Se o usuário está autenticado e a rota atual (após popstate) é login
+            const user = await auth.getCurrentUser()
+            
+            // ✅ REGRA 1: Bloquear volta para login se usuário autenticado
             if (user && (this.currentRoute === 'login' || event.state?.route === 'login')) {
                 console.log('🚫 Bloqueando volta para login - usuário autenticado')
+                await this.goToDefaultRoute(user)
+                return
+            }
+            
+            // ✅ REGRA 2: Se está em rota de Nível 1, bloquear voltar
+            if (this.nivel1Routes.includes(this.currentRoute)) {
+                console.log('🚫 Rota de Nível 1 - bloqueando voltar')
+                await this.goToDefaultRoute(user)
+                return
+            }
+            
+            // ✅ REGRA 3: Se está em rota de Nível 2, voltar para dashboard
+            if (this.nivel2Routes.includes(this.currentRoute)) {
+                console.log('↩️ Rota de Nível 2 - voltando para dashboard')
                 
-                // Substituir estado para evitar voltar novamente
-                if (user.role === 'root') {
-                    window.history.replaceState({ route: 'gerenciar-root', canGoBack: false }, '', '#gerenciar-root')
+                if (user && user.role === 'root') {
                     this.navigate('gerenciar-root', {}, false)
                 } else {
-                    window.history.replaceState({ route: 'dashboard', canGoBack: false }, '', '#dashboard')
                     this.navigate('dashboard', {}, false)
                 }
                 return
             }
             
-            // Se há histórico no nosso app, voltar uma página
-            if (this.navigationHistory.length > 1) {
-                // Remove a rota atual
-                this.navigationHistory.pop()
-                // Pega a rota anterior
-                const previousRoute = this.navigationHistory[this.navigationHistory.length - 1]
-                
-                // Se a rota anterior é login e usuário está autenticado, vai para rota padrão
-                if (previousRoute === 'login' && user) {
-                    console.log('🚫 Bloqueando volta para login do histórico')
-                    this.navigationHistory = [] // Limpa histórico
-                    
-                    await this.goToDefaultRoute()
-                    return
-                }
-                
-                console.log('↩️ Voltando para:', previousRoute)
-                // Remove o último item para não duplicar quando navigate adicionar
-                this.navigationHistory.pop()
-                this.navigate(previousRoute, {}, false)
-            } else {
-                // Se não há histórico, vai para a rota padrão
-                console.log('↩️ Sem histórico, indo para rota padrão')
-                await this.goToDefaultRoute()
-            }
+            // ✅ FALLBACK: Ir para rota padrão
+            console.log('↩️ Fallback - indo para rota padrão')
+            await this.goToDefaultRoute(user)
         })
         
         console.log('✅ Handler do botão voltar configurado')
     }
 
-    // Ir para rota padrão baseado em autenticação
-    async goToDefaultRoute() {
-        const user = await auth.getCurrentUser()
+    /**
+     * ✅ Ir para rota padrão baseado em autenticação
+     */
+    async goToDefaultRoute(user = null) {
+        if (!user) {
+            user = await auth.getCurrentUser()
+        }
         
         if (user && user.role === 'root') {
+            console.log('🔴 Indo para gerenciar-root')
             // Substituir estado para bloquear volta
-            window.history.replaceState({ route: 'gerenciar-root', canGoBack: false }, '', '#gerenciar-root')
+            window.history.replaceState(
+                { route: 'gerenciar-root', nivel: 1, canGoBack: false },
+                '',
+                '#gerenciar-root'
+            )
             this.navigate('gerenciar-root', {}, false)
         } else if (user) {
+            console.log('📊 Indo para dashboard')
             // Substituir estado para bloquear volta
-            window.history.replaceState({ route: 'dashboard', canGoBack: false }, '', '#dashboard')
+            window.history.replaceState(
+                { route: 'dashboard', nivel: 1, canGoBack: false },
+                '',
+                '#dashboard'
+            )
             this.navigate('dashboard', {}, false)
         } else {
+            console.log('🔓 Indo para login')
             this.navigate('login', {}, false)
         }
     }
 
+    /**
+     * ✅ NAVEGAÇÃO SIMPLIFICADA
+     * 
+     * Determina o nível da rota e adiciona ao histórico apenas se necessário
+     */
     async navigate(route, params = {}, addToHistory = true) {
         if (this.isNavigating) {
             console.log('⏸️ Navegação já em andamento, ignorando...')
@@ -212,25 +258,22 @@ class Router {
 
         this.currentRoute = route
         
-        // Adicionar ao histórico
         if (addToHistory) {
-            // Se estiver indo para uma rota protegida após login, limpar histórico anterior
-            if (this.protectedRoutes.includes(route) && this.navigationHistory[this.navigationHistory.length - 1] === 'login') {
-                console.log('🧹 Limpando histórico de login')
-                this.navigationHistory = []
-            }
+            // Determinar nível da rota
+            const nivel = this.nivel1Routes.includes(route) ? 1 : 2
+            const canGoBack = nivel === 2 // Apenas Nível 2 pode usar voltar
             
-            this.navigationHistory.push(route)
-            
-            // Criar estado com controle de volta
             const state = {
                 route: route,
-                canGoBack: route !== 'login' && route !== 'setup-root'
+                nivel: nivel,
+                canGoBack: canGoBack,
+                timestamp: Date.now()
             }
             
-            // Atualizar a URL do navegador
+            // Adicionar ao histórico
             window.history.pushState(state, '', `#${route}`)
-            console.log('📚 Histórico:', this.navigationHistory)
+            
+            console.log(`📚 Navegação: ${route} (Nível ${nivel}, voltar: ${canGoBack})`)
         }
 
         try {
@@ -249,8 +292,30 @@ class Router {
     endAuthOperation() {
         this.authStateChangeInProgress = false
     }
+
+    /**
+     * ✅ Verificar se rota é de Nível 2 (secundária)
+     */
+    isSecondaryRoute(route) {
+        return this.nivel2Routes.includes(route)
+    }
+
+    /**
+     * ✅ Obter rota padrão para o usuário
+     */
+    async getDefaultRoute() {
+        const user = await auth.getCurrentUser()
+        if (user && user.role === 'root') {
+            return 'gerenciar-root'
+        } else if (user) {
+            return 'dashboard'
+        }
+        return 'login'
+    }
 }
 
 export const router = new Router()
 
 window.appRouter = router
+
+console.log('✅ Router simplificado v2.0 carregado')

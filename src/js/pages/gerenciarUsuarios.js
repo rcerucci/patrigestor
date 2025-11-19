@@ -268,9 +268,9 @@ function renderUserCard(u) {
                     <button class="btn btn-danger btn-small" onclick="abrirModalExcluirUsuario('${u.id}')">🗑️ Excluir</button>
                 </div>
             ` : isCurrentUser ? `
-                <p style="color: #6b7280; font-style: italic; font-size: 13px; text-align: center; margin: 0;">
-                    🔒 Você não pode gerenciar seu próprio usuário
-                </p>
+                <div style="display: flex; justify-content: center;">
+                    <button class="btn btn-warning btn-small" onclick="abrirModalResetSenha('${u.id}')" style="width: 100%;">🔑 Senha</button>
+                </div>
             ` : `
                 <p style="color: #ef4444; font-weight: 600; font-size: 13px; text-align: center; margin: 0;">
                     🔴 ROOT - Protegido
@@ -307,9 +307,9 @@ function renderUserRow(u) {
                         <button class="btn btn-danger btn-small" onclick="abrirModalExcluirUsuario('${u.id}')" title="Excluir usuário">🗑️ Excluir</button>
                     </div>
                 ` : isCurrentUser ? `
-                    <span style="color: #6b7280; font-style: italic; font-size: 13px;">
-                        🔒 Você não pode gerenciar seu próprio usuário
-                    </span>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button class="btn btn-warning btn-small" onclick="abrirModalResetSenha('${u.id}')" title="Resetar senha">🔑 Senha</button>
+                    </div>
                 ` : `
                     <span style="color: #ef4444; font-weight: 600; font-size: 13px;">🔴 ROOT - Protegido</span>
                 `}

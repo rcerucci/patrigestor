@@ -73,6 +73,18 @@ export async function renderDashboard() {
                         <h3>Centros de Custo</h3>
                         <p>Gerenciar centros de custo</p>
                     </div>
+
+                    <div class="dashboard-card" onclick="window.appRouter.navigate('gerenciar-depreciacoes')">
+                        <div class="card-icon">📉</div>
+                        <h3>Depreciações</h3>
+                        <p>Gerenciar tipos de depreciação</p>
+                    </div>
+
+                    <div class="dashboard-card" onclick="window.appRouter.navigate('gerenciar-unidades')">
+                        <div class="card-icon">🏛️</div>
+                        <h3>Unidades</h3>
+                        <p>Gerenciar unidades e logos</p>
+                    </div>
                 ` : ''}
             </div>
         </div>

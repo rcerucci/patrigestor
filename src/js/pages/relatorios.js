@@ -2,6 +2,8 @@ import { auth } from '../auth.js'
 import { router } from '../router.js'
 import { patrimonioService } from '../patrimonioService.js'
 import { centroCustoService } from '../centroCustoService.js'
+import { depreciacaoService } from '../depreciacaoService.js'
+import { unidadeService } from '../unidadeService.js'
 import { relatorioService } from '../relatorioService.js'
 import { UI } from '../ui.js'
 
@@ -14,6 +16,8 @@ export async function renderRelatorios() {
     }
 
     const centros = await centroCustoService.listar()
+    const depreciacoes = await depreciacaoService.listar()
+    const unidades = await unidadeService.listar()
 
     const app = document.getElementById('app')
 
@@ -84,6 +88,44 @@ export async function renderRelatorios() {
                             <select class="form-control" id="centro_custo_filtro">
                                 <option value="">Selecione o Centro de Custo</option>
                                 ${centros.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Checkbox Depreciação -->
+                    <div style="margin-bottom: 15px; background: white; padding: 15px; border-radius: 8px;">
+                        <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer;">
+                            <input 
+                                type="checkbox" 
+                                id="usar_filtro_depreciacao"
+                                onchange="alternarCampoFiltro('depreciacao')"
+                                style="width: 20px; height: 20px; margin-right: 12px; cursor: pointer; accent-color: #f59e0b;"
+                            >
+                            <span style="font-weight: 600; color: #1e3a8a;">Filtrar por Depreciação</span>
+                        </label>
+                        <div id="campo-depreciacao" style="margin-left: 32px; opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
+                            <select class="form-control" id="depreciacao_filtro">
+                                <option value="">Selecione a Depreciação</option>
+                                ${depreciacoes.map(d => `<option value="${d.id}">${d.nome}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Checkbox Unidade -->
+                    <div style="margin-bottom: 15px; background: white; padding: 15px; border-radius: 8px;">
+                        <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer;">
+                            <input 
+                                type="checkbox" 
+                                id="usar_filtro_unidade"
+                                onchange="alternarCampoFiltro('unidade')"
+                                style="width: 20px; height: 20px; margin-right: 12px; cursor: pointer; accent-color: #f59e0b;"
+                            >
+                            <span style="font-weight: 600; color: #1e3a8a;">Filtrar por Unidade</span>
+                        </label>
+                        <div id="campo-unidade" style="margin-left: 32px; opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
+                            <select class="form-control" id="unidade_filtro">
+                                <option value="">Selecione a Unidade</option>
+                                ${unidades.map(u => `<option value="${u.id}">${u.nome}</option>`).join('')}
                             </select>
                         </div>
                     </div>
@@ -168,191 +210,195 @@ export async function renderRelatorios() {
         <!-- Modal de Progresso -->
         <div id="modal-progresso" class="modal" style="display: none;">
             <div class="modal-content" style="max-width: 500px;">
-                <div class="modal-header" style="background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);">
-                    <h3>📸 Gerando Relatório Fotográfico</h3>
-                </div>
-                <div style="padding: 20px;">
-                    <p style="margin-bottom: 15px; font-size: 16px; color: #374151;">
-                        Processando imagens, aguarde...
-                    </p>
-                    
-                    <div style="background: #f3f4f6; border-radius: 10px; height: 30px; overflow: hidden; margin-bottom: 15px;">
-                        <div id="barra-progresso" style="background: linear-gradient(90deg, #3b82f6, #10b981); height: 100%; width: 0%; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">
-                            0%
-                        </div>
+                <h3 style="margin-top: 0; color: #1e3a8a;">📸 Gerando Relatório Fotográfico</h3>
+                <p style="color: #6b7280; margin-bottom: 20px;">Por favor, aguarde...</p>
+                
+                <div style="background: #e5e7eb; border-radius: 12px; height: 30px; overflow: hidden; margin-bottom: 15px;">
+                    <div 
+                        id="barra-progresso" 
+                        style="background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%); height: 100%; width: 0%; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;"
+                    >
+                        0%
                     </div>
-                    
-                    <p id="texto-progresso" style="text-align: center; color: #6b7280; font-size: 14px;">
-                        Iniciando...
-                    </p>
-                    
-                    <p style="text-align: center; color: #f59e0b; font-size: 12px; margin-top: 10px;">
-                        ⏳ Não feche esta página
-                    </p>
                 </div>
+                
+                <p id="texto-progresso" style="color: #374151; font-size: 14px; text-align: center;">Iniciando...</p>
             </div>
         </div>
     `
 
-    // Inicializar
-    atualizarResumoFiltros()
+    // Expor funções para uso inline
+    window.alternarFiltros = alternarFiltros
+    window.alternarCampoFiltro = alternarCampoFiltro
+    window.validarDatas = validarDatas
+
+    // Inicializar resumo
+    atualizarResumo()
 }
 
-window.alternarFiltros = function() {
+function alternarFiltros() {
     const tipoFiltro = document.querySelector('input[name="tipo_filtro"]:checked').value
-    const opcoesDiv = document.getElementById('opcoes-filtro')
-    
+    const opcoesFiltro = document.getElementById('opcoes-filtro')
+
     if (tipoFiltro === 'geral') {
-        opcoesDiv.style.opacity = '0.5'
-        opcoesDiv.style.pointerEvents = 'none'
+        opcoesFiltro.style.opacity = '0.5'
+        opcoesFiltro.style.pointerEvents = 'none'
         
+        // Desmarcar todos os checkboxes
         document.getElementById('usar_filtro_centro').checked = false
+        document.getElementById('usar_filtro_depreciacao').checked = false
+        document.getElementById('usar_filtro_unidade').checked = false
         document.getElementById('usar_filtro_data').checked = false
         
+        // Desabilitar todos os campos
         alternarCampoFiltro('centro')
+        alternarCampoFiltro('depreciacao')
+        alternarCampoFiltro('unidade')
         alternarCampoFiltro('data')
     } else {
-        opcoesDiv.style.opacity = '1'
-        opcoesDiv.style.pointerEvents = 'auto'
+        opcoesFiltro.style.opacity = '1'
+        opcoesFiltro.style.pointerEvents = 'auto'
     }
-    
-    atualizarResumoFiltros()
+
+    atualizarResumo()
 }
 
-window.alternarCampoFiltro = function(tipo) {
-    if (tipo === 'centro') {
-        const checkbox = document.getElementById('usar_filtro_centro')
-        const campo = document.getElementById('campo-centro')
-        
-        if (checkbox.checked) {
-            campo.style.opacity = '1'
-            campo.style.pointerEvents = 'auto'
-        } else {
-            campo.style.opacity = '0.5'
-            campo.style.pointerEvents = 'none'
-            document.getElementById('centro_custo_filtro').value = ''
-        }
-    } else if (tipo === 'data') {
-        const checkbox = document.getElementById('usar_filtro_data')
-        const campo = document.getElementById('campo-data')
-        
-        if (checkbox.checked) {
-            campo.style.opacity = '1'
-            campo.style.pointerEvents = 'auto'
-        } else {
-            campo.style.opacity = '0.5'
-            campo.style.pointerEvents = 'none'
-            document.getElementById('data_inicio').value = ''
-            document.getElementById('data_fim').value = ''
-            document.getElementById('data-erro').style.display = 'none'
-        }
+function alternarCampoFiltro(tipo) {
+    const checkbox = document.getElementById(`usar_filtro_${tipo}`)
+    const campo = document.getElementById(`campo-${tipo}`)
+
+    if (checkbox.checked) {
+        campo.style.opacity = '1'
+        campo.style.pointerEvents = 'auto'
+    } else {
+        campo.style.opacity = '0.5'
+        campo.style.pointerEvents = 'none'
     }
-    
-    atualizarResumoFiltros()
+
+    atualizarResumo()
 }
 
-window.validarDatas = function() {
+function validarDatas() {
     const dataInicio = document.getElementById('data_inicio').value
     const dataFim = document.getElementById('data_fim').value
-    const erroElement = document.getElementById('data-erro')
-    
+    const erroMsg = document.getElementById('data-erro')
+
     if (dataInicio && dataFim && dataInicio > dataFim) {
-        erroElement.style.display = 'block'
-        document.getElementById('data_inicio').style.borderColor = '#ef4444'
-        document.getElementById('data_fim').style.borderColor = '#ef4444'
+        erroMsg.style.display = 'block'
+        atualizarResumo()
         return false
     } else {
-        erroElement.style.display = 'none'
-        document.getElementById('data_inicio').style.borderColor = ''
-        document.getElementById('data_fim').style.borderColor = ''
-        atualizarResumoFiltros()
+        erroMsg.style.display = 'none'
+        atualizarResumo()
         return true
     }
 }
 
-function atualizarResumoFiltros() {
+function atualizarResumo() {
     const tipoFiltro = document.querySelector('input[name="tipo_filtro"]:checked').value
     const textoResumo = document.getElementById('texto-resumo')
     
     if (tipoFiltro === 'geral') {
-        textoResumo.textContent = 'Todos os patrimônios serão incluídos'
-        textoResumo.style.color = '#374151'
+        textoResumo.innerHTML = '<strong style="color: #059669;">Todos os patrimônios serão incluídos</strong>'
         return
     }
-    
+
     const usarCentro = document.getElementById('usar_filtro_centro').checked
+    const usarDepreciacao = document.getElementById('usar_filtro_depreciacao').checked
+    const usarUnidade = document.getElementById('usar_filtro_unidade').checked
     const usarData = document.getElementById('usar_filtro_data').checked
-    
-    if (!usarCentro && !usarData) {
-        textoResumo.textContent = 'Nenhum filtro selecionado (todos os patrimônios serão incluídos)'
-        textoResumo.style.color = '#f59e0b'
-        return
-    }
-    
-    const resumoParts = []
-    
+
+    const filtrosAtivos = []
+
     if (usarCentro) {
         const centroSelect = document.getElementById('centro_custo_filtro')
-        const centroNome = centroSelect.options[centroSelect.selectedIndex].text
-        if (centroSelect.value) {
-            resumoParts.push(`Centro: ${centroNome}`)
-        }
+        const centroTexto = centroSelect.options[centroSelect.selectedIndex]?.text || 'Não selecionado'
+        filtrosAtivos.push(`<strong>Centro:</strong> ${centroTexto}`)
     }
-    
+
+    if (usarDepreciacao) {
+        const depreciacaoSelect = document.getElementById('depreciacao_filtro')
+        const depreciacaoTexto = depreciacaoSelect.options[depreciacaoSelect.selectedIndex]?.text || 'Não selecionado'
+        filtrosAtivos.push(`<strong>Depreciação:</strong> ${depreciacaoTexto}`)
+    }
+
+    if (usarUnidade) {
+        const unidadeSelect = document.getElementById('unidade_filtro')
+        const unidadeTexto = unidadeSelect.options[unidadeSelect.selectedIndex]?.text || 'Não selecionado'
+        filtrosAtivos.push(`<strong>Unidade:</strong> ${unidadeTexto}`)
+    }
+
     if (usarData) {
         const dataInicio = document.getElementById('data_inicio').value
         const dataFim = document.getElementById('data_fim').value
         
         if (dataInicio && dataFim) {
-            resumoParts.push(`Período: ${new Date(dataInicio).toLocaleDateString('pt-BR')} a ${new Date(dataFim).toLocaleDateString('pt-BR')}`)
+            const inicio = new Date(dataInicio).toLocaleDateString('pt-BR')
+            const fim = new Date(dataFim).toLocaleDateString('pt-BR')
+            filtrosAtivos.push(`<strong>Período:</strong> ${inicio} a ${fim}`)
         } else if (dataInicio) {
-            resumoParts.push(`A partir de: ${new Date(dataInicio).toLocaleDateString('pt-BR')}`)
+            const inicio = new Date(dataInicio).toLocaleDateString('pt-BR')
+            filtrosAtivos.push(`<strong>A partir de:</strong> ${inicio}`)
         } else if (dataFim) {
-            resumoParts.push(`Até: ${new Date(dataFim).toLocaleDateString('pt-BR')}`)
+            const fim = new Date(dataFim).toLocaleDateString('pt-BR')
+            filtrosAtivos.push(`<strong>Até:</strong> ${fim}`)
         }
     }
-    
-    if (resumoParts.length > 0) {
-        textoResumo.textContent = resumoParts.join(' | ')
-        textoResumo.style.color = '#10b981'
+
+    if (filtrosAtivos.length === 0) {
+        textoResumo.innerHTML = '<em style="color: #f59e0b;">Nenhum filtro selecionado (todos os patrimônios serão incluídos)</em>'
     } else {
-        textoResumo.textContent = 'Configure os filtros acima'
-        textoResumo.style.color = '#f59e0b'
+        textoResumo.innerHTML = filtrosAtivos.join(' <span style="color: #d1d5db;">|</span> ')
     }
 }
-
-window.addEventListener('change', (e) => {
-    if (e.target.id === 'centro_custo_filtro' || 
-        e.target.id === 'data_inicio' || 
-        e.target.id === 'data_fim') {
-        atualizarResumoFiltros()
-    }
-})
 
 async function obterPatrimoniosFiltrados() {
     try {
         console.log('🔍 Buscando patrimônios...')
         
         let patrimonios = await patrimonioService.listar()
-        
-        console.log('📦 Total de patrimônios no banco:', patrimonios.length)
+        console.log('📦 Total inicial:', patrimonios.length)
 
         const tipoFiltro = document.querySelector('input[name="tipo_filtro"]:checked').value
-        
+
         if (tipoFiltro === 'geral') {
-            console.log('✅ Modo GERAL - Retornando todos os patrimônios')
+            console.log('✅ Relatório geral (sem filtros)')
             return patrimonios
         }
 
+        // Aplicar filtros
         const usarCentro = document.getElementById('usar_filtro_centro').checked
+        const usarDepreciacao = document.getElementById('usar_filtro_depreciacao').checked
+        const usarUnidade = document.getElementById('usar_filtro_unidade').checked
         const usarData = document.getElementById('usar_filtro_data').checked
 
         if (usarCentro) {
             const centroId = document.getElementById('centro_custo_filtro').value
+            
             if (centroId) {
                 const antes = patrimonios.length
                 patrimonios = patrimonios.filter(p => p.centro_custo_id === centroId)
                 console.log(`Filtro Centro de Custo: ${antes} → ${patrimonios.length}`)
+            }
+        }
+
+        if (usarDepreciacao) {
+            const depreciacaoId = document.getElementById('depreciacao_filtro').value
+            
+            if (depreciacaoId) {
+                const antes = patrimonios.length
+                patrimonios = patrimonios.filter(p => p.depreciacao_id === depreciacaoId)
+                console.log(`Filtro Depreciação: ${antes} → ${patrimonios.length}`)
+            }
+        }
+
+        if (usarUnidade) {
+            const unidadeId = document.getElementById('unidade_filtro').value
+            
+            if (unidadeId) {
+                const antes = patrimonios.length
+                patrimonios = patrimonios.filter(p => p.unidade_id === unidadeId)
+                console.log(`Filtro Unidade: ${antes} → ${patrimonios.length}`)
             }
         }
 
@@ -395,18 +441,31 @@ function obterFiltrosAplicados() {
     if (tipoFiltro === 'geral') {
         return {
             centro_custo: 'Todos',
+            depreciacao: 'Todos',
+            unidade: 'Todos',
             data_inicio: null,
             data_fim: null
         }
     }
 
     const centroSelect = document.getElementById('centro_custo_filtro')
+    const depreciacaoSelect = document.getElementById('depreciacao_filtro')
+    const unidadeSelect = document.getElementById('unidade_filtro')
+    
     const usarCentro = document.getElementById('usar_filtro_centro').checked
+    const usarDepreciacao = document.getElementById('usar_filtro_depreciacao').checked
+    const usarUnidade = document.getElementById('usar_filtro_unidade').checked
     const usarData = document.getElementById('usar_filtro_data').checked
     
     return {
         centro_custo: (usarCentro && centroSelect.value) 
             ? centroSelect.options[centroSelect.selectedIndex].text 
+            : 'Todos',
+        depreciacao: (usarDepreciacao && depreciacaoSelect.value)
+            ? depreciacaoSelect.options[depreciacaoSelect.selectedIndex].text
+            : 'Todos',
+        unidade: (usarUnidade && unidadeSelect.value)
+            ? unidadeSelect.options[unidadeSelect.selectedIndex].text
             : 'Todos',
         data_inicio: (usarData && document.getElementById('data_inicio').value)
             ? new Date(document.getElementById('data_inicio').value).toLocaleDateString('pt-BR')

@@ -2,6 +2,8 @@ import { auth } from '../auth.js'
 import { router } from '../router.js'
 import { patrimonioService } from '../patrimonioService.js'
 import { centroCustoService } from '../centroCustoService.js'
+import { depreciacaoService } from '../depreciacaoService.js'
+import { unidadeService } from '../unidadeService.js'
 import { uploadImage, deleteImage } from '../imageUpload.js'
 import { UI } from '../ui.js'
 
@@ -94,6 +96,8 @@ export async function renderEditarPatrimonio(patrimonioId) {
         foto3File = null
 
         const centros = await centroCustoService.listar()
+        const depreciacoes = await depreciacaoService.listar()
+        const unidades = await unidadeService.listar()
 
         const app = document.getElementById('app')
 
@@ -111,6 +115,49 @@ export async function renderEditarPatrimonio(patrimonioId) {
                 <div id="edicao-alert"></div>
 
                 <form id="edicao-form">
+                    <!-- CSS Grid Responsivo -->
+                    <style>
+                        .form-grid-2 {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 20px;
+                        }
+                        
+                        /* Mobile: manter 2 colunas mas ajustar espaçamentos */
+                        @media (max-width: 768px) {
+                            .form-grid-2 {
+                                gap: 10px;
+                            }
+                            
+                            .card {
+                                padding: 12px !important;
+                            }
+                            
+                            .form-group {
+                                margin-bottom: 12px !important;
+                            }
+                            
+                            .form-group label {
+                                font-size: 13px !important;
+                                margin-bottom: 4px !important;
+                            }
+                            
+                            .form-control {
+                                font-size: 14px !important;
+                                padding: 8px 10px !important;
+                            }
+                            
+                            .form-grid-2 .form-control[id*="valor"] {
+                                padding-left: 32px !important;
+                            }
+                            
+                            .form-grid-2 [style*="position: absolute"] {
+                                font-size: 13px !important;
+                                left: 8px !important;
+                            }
+                        }
+                    </style>
+
                     <!-- Placa (readonly) -->
                     <div class="form-group">
                         <label>Placa *</label>
@@ -138,7 +185,103 @@ export async function renderEditarPatrimonio(patrimonioId) {
                         >
                     </div>
 
-                    <!-- Descrição -->
+                    <!-- LINHA 1: Valores (2 colunas) -->
+                    <div class="form-grid-2">
+                        <!-- Valor Atual -->
+                        <div class="form-group">
+                            <label>Valor Atual</label>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 10px; top: 10px; color: #6b7280; font-weight: 600;">R$</span>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="valor_atual" 
+                                    value="${formatarMoeda(patrimonioAtual.valor_atual)}"
+                                    placeholder="0,00"
+                                    inputmode="decimal"
+                                    style="padding-left: 40px;"
+                                    autocomplete="off"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Valor de Mercado -->
+                        <div class="form-group">
+                            <label>Valor de Mercado</label>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 10px; top: 10px; color: #6b7280; font-weight: 600;">R$</span>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="valor_mercado" 
+                                    value="${formatarMoeda(patrimonioAtual.valor_mercado)}"
+                                    placeholder="0,00"
+                                    inputmode="decimal"
+                                    style="padding-left: 40px;"
+                                    autocomplete="off"
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LINHA 2: Estado e Centro de Custo (2 colunas) -->
+                    <div class="form-grid-2">
+                        <!-- Estado -->
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select class="form-control" id="estado">
+                                <option value="">Selecione o Estado</option>
+                                <option value="Excelente" ${patrimonioAtual.estado === 'Excelente' ? 'selected' : ''}>Excelente</option>
+                                <option value="Bom" ${patrimonioAtual.estado === 'Bom' ? 'selected' : ''}>Bom</option>
+                                <option value="Regular" ${patrimonioAtual.estado === 'Regular' ? 'selected' : ''}>Regular</option>
+                                <option value="Ruim" ${patrimonioAtual.estado === 'Ruim' ? 'selected' : ''}>Ruim</option>
+                            </select>
+                        </div>
+
+                        <!-- Centro de Custo -->
+                        <div class="form-group">
+                            <label>Centro de Custo</label>
+                            <select class="form-control" id="centro_custo_id">
+                                <option value="">Selecione o Centro de Custo</option>
+                                ${centros.map(c => `
+                                    <option value="${c.id}" ${patrimonioAtual.centro_custo_id === c.id ? 'selected' : ''}>
+                                        ${c.nome}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- LINHA 3: Depreciação e Unidade (2 colunas) -->
+                    <div class="form-grid-2">
+                        <!-- Depreciação -->
+                        <div class="form-group">
+                            <label>Depreciação</label>
+                            <select class="form-control" id="depreciacao_id">
+                                <option value="">Selecione a Depreciação</option>
+                                ${depreciacoes.map(d => `
+                                    <option value="${d.id}" ${patrimonioAtual.depreciacao_id === d.id ? 'selected' : ''}>
+                                        ${d.nome}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+
+                        <!-- Unidade -->
+                        <div class="form-group">
+                            <label>Unidade</label>
+                            <select class="form-control" id="unidade_id">
+                                <option value="">Selecione a Unidade</option>
+                                ${unidades.map(u => `
+                                    <option value="${u.id}" ${patrimonioAtual.unidade_id === u.id ? 'selected' : ''}>
+                                        ${u.nome}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Descrição (campo grande) -->
                     <div class="form-group">
                         <label>Descrição</label>
                         <textarea 
@@ -146,67 +289,6 @@ export async function renderEditarPatrimonio(patrimonioId) {
                             id="descricao" 
                             rows="3"
                         >${patrimonioAtual.descricao || ''}</textarea>
-                    </div>
-
-                    <!-- Valor Atual -->
-                    <div class="form-group">
-                        <label>Valor Atual</label>
-                        <div style="position: relative;">
-                            <span style="position: absolute; left: 10px; top: 10px; color: #6b7280; font-weight: 600;">R$</span>
-                            <input 
-                                type="text" 
-                                class="form-control" 
-                                id="valor_atual" 
-                                value="${formatarMoeda(patrimonioAtual.valor_atual)}"
-                                placeholder="0,00"
-                                inputmode="decimal"
-                                style="padding-left: 40px;"
-                                autocomplete="off"
-                            >
-                        </div>
-                    </div>
-
-                    <!-- Valor de Mercado -->
-                    <div class="form-group">
-                        <label>Valor de Mercado</label>
-                        <div style="position: relative;">
-                            <span style="position: absolute; left: 10px; top: 10px; color: #6b7280; font-weight: 600;">R$</span>
-                            <input 
-                                type="text" 
-                                class="form-control" 
-                                id="valor_mercado" 
-                                value="${formatarMoeda(patrimonioAtual.valor_mercado)}"
-                                placeholder="0,00"
-                                inputmode="decimal"
-                                style="padding-left: 40px;"
-                                autocomplete="off"
-                            >
-                        </div>
-                    </div>
-
-                    <!-- Estado -->
-                    <div class="form-group">
-                        <label>Estado</label>
-                        <select class="form-control" id="estado">
-                            <option value="">Selecione o Estado</option>
-                            <option value="Excelente" ${patrimonioAtual.estado === 'Excelente' ? 'selected' : ''}>Excelente</option>
-                            <option value="Bom" ${patrimonioAtual.estado === 'Bom' ? 'selected' : ''}>Bom</option>
-                            <option value="Regular" ${patrimonioAtual.estado === 'Regular' ? 'selected' : ''}>Regular</option>
-                            <option value="Ruim" ${patrimonioAtual.estado === 'Ruim' ? 'selected' : ''}>Ruim</option>
-                        </select>
-                    </div>
-
-                    <!-- Centro de Custo -->
-                    <div class="form-group">
-                        <label>Centro de Custo</label>
-                        <select class="form-control" id="centro_custo_id">
-                            <option value="">Selecione o Centro de Custo</option>
-                            ${centros.map(c => `
-                                <option value="${c.id}" ${patrimonioAtual.centro_custo_id === c.id ? 'selected' : ''}>
-                                    ${c.nome}
-                                </option>
-                            `).join('')}
-                        </select>
                     </div>
 
                     <!-- Fotos -->
@@ -419,7 +501,9 @@ async function handleEdicao(e) {
             valor_atual: converterMoedaParaDecimal(document.getElementById('valor_atual').value),
             valor_mercado: converterMoedaParaDecimal(document.getElementById('valor_mercado').value),
             estado: document.getElementById('estado').value || null,
-            centro_custo_id: document.getElementById('centro_custo_id').value || null
+            centro_custo_id: document.getElementById('centro_custo_id').value || null,
+            depreciacao_id: document.getElementById('depreciacao_id').value || null,
+            unidade_id: document.getElementById('unidade_id').value || null
         }
 
         console.log('🔄 Processando fotos alteradas...')
