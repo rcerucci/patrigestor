@@ -420,7 +420,7 @@ export async function renderCadastroPatrimonio() {
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
                         <div>
                             <label class="photo-upload">
-                                <input type="file" id="foto1" accept="image/*" capture="environment" onchange="handlePhotoSelect(event, 'foto1-preview', 1)" style="display: none;">
+                                <input type="file" id="foto1" accept="image/*" capture="environment" style="display: none;">
                                 <div class="photo-preview" id="foto1-preview">
                                     <span style="font-size: 32px;">📷</span>
                                     <span style="font-size: 12px; margin-top: 5px;">Foto 1</span>
@@ -430,7 +430,7 @@ export async function renderCadastroPatrimonio() {
 
                         <div>
                             <label class="photo-upload">
-                                <input type="file" id="foto2" accept="image/*" capture="environment" onchange="handlePhotoSelect(event, 'foto2-preview', 2)" style="display: none;">
+                                <input type="file" id="foto2" accept="image/*" capture="environment" style="display: none;">
                                 <div class="photo-preview" id="foto2-preview">
                                     <span style="font-size: 32px;">📷</span>
                                     <span style="font-size: 12px; margin-top: 5px;">Foto 2</span>
@@ -440,7 +440,7 @@ export async function renderCadastroPatrimonio() {
 
                         <div>
                             <label class="photo-upload">
-                                <input type="file" id="foto3" accept="image/*" capture="environment" onchange="handlePhotoSelect(event, 'foto3-preview', 3)" style="display: none;">
+                                <input type="file" id="foto3" accept="image/*" capture="environment" style="display: none;">
                                 <div class="photo-preview" id="foto3-preview">
                                     <span style="font-size: 32px;">📷</span>
                                     <span style="font-size: 12px; margin-top: 5px;">Foto 3</span>
@@ -495,9 +495,18 @@ export async function renderCadastroPatrimonio() {
     
     valorAtualInput.addEventListener('input', aplicarMascaraMoeda)
     valorMercadoInput.addEventListener('input', aplicarMascaraMoeda)
+    
+    // Posicionar cursor à direita ao focar nos campos de valor
+    valorAtualInput.addEventListener('focus', posicionarCursorDireita)
+    valorMercadoInput.addEventListener('focus', posicionarCursorDireita)
 
     document.getElementById('btn-open-scanner').addEventListener('click', abrirScanner)
     document.getElementById('btn-close-scanner').addEventListener('click', fecharScanner)
+    
+    // Event listeners para fotos
+    document.getElementById('foto1').addEventListener('change', (e) => handlePhotoSelect(e, 'foto1-preview', 1))
+    document.getElementById('foto2').addEventListener('change', (e) => handlePhotoSelect(e, 'foto2-preview', 2))
+    document.getElementById('foto3').addEventListener('change', (e) => handlePhotoSelect(e, 'foto3-preview', 3))
 
     setTimeout(() => {
         placaInput.focus()
@@ -752,6 +761,16 @@ function formatarMoeda(valor) {
     return numero.toFixed(2).replace('.', ',')
 }
 
+function posicionarCursorDireita(e) {
+    const input = e.target
+    const valor = input.value
+    
+    // Usar setTimeout para garantir que o cursor seja posicionado após o navegador processar o foco
+    setTimeout(() => {
+        input.setSelectionRange(valor.length, valor.length)
+    }, 0)
+}
+
 function validarPlaca(e) {
     e.target.value = e.target.value.replace(/\D/g, '')
 }
@@ -800,17 +819,29 @@ function converterMoedaParaDecimal(valor) {
 }
 
 function handlePhotoSelect(event, previewId, fotoNum) {
+    console.log(`📷 handlePhotoSelect chamada - Foto ${fotoNum}`)
+    
     const file = event.target.files[0]
+    console.log('Arquivo selecionado:', file)
+    
     if (file) {
         if (fotoNum === 1) foto1File = file
         if (fotoNum === 2) foto2File = file
         if (fotoNum === 3) foto3File = file
 
+        console.log(`✅ Foto ${fotoNum} salva:`, file.name, file.size, 'bytes')
+
         const reader = new FileReader()
         reader.onload = (e) => {
+            console.log(`🖼️ Preview da foto ${fotoNum} gerado`)
             document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" alt="Preview">`
         }
+        reader.onerror = (err) => {
+            console.error(`❌ Erro ao ler foto ${fotoNum}:`, err)
+        }
         reader.readAsDataURL(file)
+    } else {
+        console.warn(`⚠️ Nenhum arquivo selecionado para foto ${fotoNum}`)
     }
 }
 
