@@ -170,7 +170,7 @@ export const rootService = {
                 } else if (arquivos) {
                     // ✅ SOMAR TAMANHO REAL DOS ARQUIVOS
                     arquivos.forEach(arquivo => {
-                        if (arquivo.name && arquivo.name.match(/^\d{4}_\d\.jpg$/)) {
+                        if (arquivo.name && arquivo.name.match(/^\d{4,10}_\d\.jpg$/)) {
                             totalFotos++
                             tamanhoTotalBytes += arquivo.metadata?.size || 200 * 1024
                         }
@@ -809,7 +809,7 @@ export const rootService = {
                 
                 try {
                     const fileName = path.split('/').pop()
-                    const match = fileName.match(/^(\d{4})_(\d)\.jpg$/)
+                    const match = fileName.match(/^(\d{4,10})_(\d)\.jpg$/)
                     
                     if (!match) {
                         console.warn(`⚠️ Nome inválido: ${fileName}`)
