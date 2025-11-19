@@ -11,10 +11,16 @@ let carrosselAtual = {
     indiceAtual: 0
 }
 
+// ✅ SCANNER VARIABLES (IGUAL AO CADASTRO)
+let html5QrcodeScanner = null
+let usandoCameraFrontal = false
+let currentStream = null
+let flashAtivo = false
+let scanHistory = []
+
 // ✅ CONTROLE PARA INTERCEPTAR BOTÃO VOLTAR
 let modalAberto = false
 
-// Função para formatar valor em Real
 function formatarReal(valor) {
     if (!valor) return '-'
     return parseFloat(valor).toLocaleString('pt-BR', {
@@ -23,7 +29,6 @@ function formatarReal(valor) {
     })
 }
 
-// ✅ FUNÇÃO PARA ADICIONAR TIMESTAMP (CACHE BUSTING)
 function adicionarTimestamp(url) {
     if (!url) return null
     const timestamp = new Date().getTime()
@@ -41,110 +46,20 @@ function configurarInterceptacaoVoltar() {
         }
     })
     
-    // Adicionar estado inicial
     history.pushState(null, '', window.location.href)
 }
 
 function fecharTodosModais() {
     const modalCarrossel = document.getElementById('modal-carrossel')
     const modalDetalhes = document.getElementById('modal-detalhes-patrimonio')
+    const modalScanner = document.getElementById('scanner-modal')
     
-    if (modalCarrossel && modalCarrossel.style.display === 'flex') {
+    if (modalScanner && modalScanner.classList.contains('active')) {
+        fecharScanner()
+    } else if (modalCarrossel && modalCarrossel.style.display === 'flex') {
         fecharCarrossel()
     } else if (modalDetalhes && modalDetalhes.classList.contains('show')) {
         fecharModalPatrimonio()
-    }
-}
-
-// ✅ FUNÇÃO PARA INICIAR SCANNER
-async function iniciarScanner() {
-    try {
-        // Verificar se tem suporte a câmera
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            alert('Seu dispositivo não suporta acesso à câmera')
-            return
-        }
-
-        // Criar modal do scanner
-        const modalScanner = document.createElement('div')
-        modalScanner.id = 'modal-scanner'
-        modalScanner.className = 'modal'
-        modalScanner.style.display = 'flex'
-        modalScanner.innerHTML = `
-            <div class="modal-content" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3>📷 Scanner de Código</h3>
-                    <span class="modal-close" onclick="fecharScanner()">×</span>
-                </div>
-                <div style="padding: 20px;">
-                    <div id="scanner-container" style="position: relative; width: 100%; aspect-ratio: 1;">
-                        <video id="scanner-video" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;"></video>
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 2px solid #3498db; border-radius: 8px;"></div>
-                    </div>
-                    <p style="text-align: center; margin-top: 15px; color: #7f8c8d;">
-                        Posicione o código de barras na área marcada
-                    </p>
-                </div>
-            </div>
-        `
-        document.body.appendChild(modalScanner)
-
-        // Importar biblioteca de scanner (Quagga para código de barras)
-        if (!window.Quagga) {
-            const script = document.createElement('script')
-            script.src = 'https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js'
-            document.head.appendChild(script)
-            
-            await new Promise((resolve, reject) => {
-                script.onload = resolve
-                script.onerror = () => reject(new Error('Erro ao carregar biblioteca de scanner'))
-            })
-        }
-
-        // Iniciar scanner
-        Quagga.init({
-            inputStream: {
-                name: "Live",
-                type: "LiveStream",
-                target: document.querySelector('#scanner-video'),
-                constraints: {
-                    facingMode: "environment"
-                }
-            },
-            decoder: {
-                readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "upc_reader"]
-            }
-        }, function(err) {
-            if (err) {
-                console.error(err)
-                alert('Erro ao iniciar câmera: ' + err.message)
-                fecharScanner()
-                return
-            }
-            Quagga.start()
-        })
-
-        // Detectar código
-        Quagga.onDetected(function(result) {
-            const code = result.codeResult.code
-            document.getElementById('busca-placa').value = code
-            aplicarFiltros()
-            fecharScanner()
-        })
-
-    } catch (error) {
-        console.error('Erro no scanner:', error)
-        alert('Erro ao abrir scanner: ' + error.message)
-    }
-}
-
-window.fecharScanner = function() {
-    if (window.Quagga) {
-        Quagga.stop()
-    }
-    const modal = document.getElementById('modal-scanner')
-    if (modal) {
-        modal.remove()
     }
 }
 
@@ -169,7 +84,6 @@ export async function renderListaPatrimonios() {
         </div>
 
         <div class="card">
-            <!-- Cabeçalho Responsivo -->
             <div class="lista-header">
                 <h2 class="card-title">Lista de Patrimônios</h2>
                 ${isEditor ? 
@@ -178,33 +92,21 @@ export async function renderListaPatrimonios() {
                 }
             </div>
 
-            <!-- Filtros Responsivos -->
             <div class="filtros-container">
                 <div class="form-group busca-group">
                     <label>Buscar por Placa</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input 
-                            type="text" 
-                            class="form-control" 
-                            id="busca-placa" 
-                            placeholder="Digite a placa..."
-                            onkeyup="aplicarFiltros()"
-                            style="flex: 1;"
-                        >
-                        <button 
-                            class="btn btn-secondary" 
-                            onclick="iniciarScanner()"
-                            style="padding: 8px 16px; display: flex; align-items: center; gap: 5px; white-space: nowrap;"
-                            title="Scanner de Código de Barras"
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="4" width="2" height="16"/>
-                                <rect x="7" y="4" width="1" height="16"/>
-                                <rect x="10" y="4" width="2" height="16"/>
-                                <rect x="14" y="4" width="1" height="16"/>
-                                <rect x="17" y="4" width="3" height="16"/>
-                            </svg>
-                            <span class="scanner-text">Scanner</span>
+                    <div class="placa-input-group">
+                        <div class="placa-input-wrapper">
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="busca-placa" 
+                                placeholder="Digite a placa..."
+                                onkeyup="aplicarFiltros()"
+                            >
+                        </div>
+                        <button type="button" class="btn-scanner" id="btn-open-scanner-lista" title="Escanear código">
+                            📷 Scan
                         </button>
                     </div>
                 </div>
@@ -226,9 +128,8 @@ export async function renderListaPatrimonios() {
             </div>
         </div>
 
-        <!-- Estilos Responsivos -->
+        <!-- ✅ ESTILOS DO SCANNER (IGUAL AO CADASTRO) -->
         <style>
-            /* Cabeçalho da Lista */
             .lista-header {
                 display: flex;
                 justify-content: space-between;
@@ -251,7 +152,6 @@ export async function renderListaPatrimonios() {
                 min-width: max-content;
             }
 
-            /* Container de Filtros */
             .filtros-container {
                 display: flex;
                 gap: 20px;
@@ -264,6 +164,176 @@ export async function renderListaPatrimonios() {
                 flex: 1;
                 margin: 0;
                 min-width: 200px;
+            }
+
+            .placa-input-group {
+                display: flex;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .placa-input-wrapper {
+                flex: 1;
+            }
+
+            .btn-scanner {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                transition: all 0.3s ease;
+                min-width: 80px;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                font-weight: 600;
+            }
+
+            .btn-scanner:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+
+            .btn-scanner:active {
+                transform: translateY(0);
+            }
+
+            .scanner-modal {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.95);
+                z-index: 9999;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+            }
+
+            .scanner-modal.active {
+                display: flex;
+            }
+
+            .scanner-content {
+                background: white;
+                border-radius: 16px;
+                padding: 20px;
+                max-width: 500px;
+                width: 100%;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            }
+
+            .scanner-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+            }
+
+            .scanner-header h3 {
+                margin: 0;
+                color: #1f2937;
+                font-size: 18px;
+            }
+
+            .scanner-controls {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 15px;
+                flex-wrap: wrap;
+            }
+
+            .btn-scanner-control {
+                background: #6b7280;
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 13px;
+                transition: all 0.2s ease;
+                flex: 1;
+                min-width: 100px;
+            }
+
+            .btn-scanner-control:hover {
+                background: #4b5563;
+            }
+
+            .btn-scanner-control.active {
+                background: #10b981;
+            }
+
+            .btn-close-scanner {
+                background: #ef4444;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.3s ease;
+            }
+
+            .btn-close-scanner:hover {
+                background: #dc2626;
+            }
+
+            #reader {
+                border-radius: 12px;
+                overflow: hidden;
+                margin-bottom: 10px;
+            }
+
+            .scanner-status {
+                padding: 10px;
+                background: #f3f4f6;
+                border-radius: 8px;
+                font-size: 13px;
+                color: #6b7280;
+                text-align: center;
+                margin-top: 10px;
+            }
+
+            .scanner-status.scanning {
+                background: #dbeafe;
+                color: #1e40af;
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
+            }
+
+            .scanner-history {
+                margin-top: 10px;
+                padding: 10px;
+                background: #f9fafb;
+                border-radius: 8px;
+                max-height: 100px;
+                overflow-y: auto;
+            }
+
+            .scanner-history-title {
+                font-size: 12px;
+                color: #6b7280;
+                font-weight: 600;
+                margin-bottom: 5px;
+            }
+
+            .scanner-history-item {
+                font-size: 11px;
+                color: #4b5563;
+                padding: 3px 0;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .scanner-history-item:last-child {
+                border-bottom: none;
             }
 
             .checkbox-group {
@@ -287,7 +357,6 @@ export async function renderListaPatrimonios() {
                 font-size: 14px;
             }
 
-            /* Responsividade Mobile */
             @media (max-width: 768px) {
                 .lista-header {
                     flex-direction: column;
@@ -326,8 +395,14 @@ export async function renderListaPatrimonios() {
                     line-height: 1.4;
                 }
 
-                .scanner-text {
-                    display: none;
+                .scanner-content {
+                    max-width: 100%;
+                }
+
+                .btn-scanner {
+                    min-width: 70px;
+                    padding: 10px 12px;
+                    font-size: 14px;
                 }
             }
 
@@ -369,31 +444,25 @@ export async function renderListaPatrimonios() {
         <div id="modal-carrossel" class="modal" style="display: none; background: rgba(0,0,0,0.95);">
             <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                 
-                <!-- Botão Fechar -->
                 <button onclick="fecharCarrossel()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: none; color: white; font-size: 36px; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; z-index: 1001; transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                     ×
                 </button>
 
-                <!-- Seta Esquerda -->
                 <button onclick="navegarCarrossel(-1)" style="position: absolute; left: 20px; background: rgba(255,255,255,0.2); border: none; color: white; font-size: 36px; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; z-index: 1001; transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                     ‹
                 </button>
 
-                <!-- Imagem -->
                 <div style="max-width: 90%; max-height: 90%; display: flex; align-items: center; justify-content: center;">
                     <img id="carrossel-imagem" src="" style="max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
                 </div>
 
-                <!-- Seta Direita -->
                 <button onclick="navegarCarrossel(1)" style="position: absolute; right: 20px; background: rgba(255,255,255,0.2); border: none; color: white; font-size: 36px; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; z-index: 1001; transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                     ›
                 </button>
 
-                <!-- Indicadores -->
                 <div id="carrossel-indicadores" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 1001;">
                 </div>
 
-                <!-- Contador -->
                 <div id="carrossel-contador" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: white; font-size: 18px; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; z-index: 1001;">
                 </div>
             </div>
@@ -423,15 +492,47 @@ export async function renderListaPatrimonios() {
                 </div>
             </div>
         </div>
+
+        <!-- ✅ MODAL DO SCANNER (IGUAL AO CADASTRO) -->
+        <div id="scanner-modal" class="scanner-modal">
+            <div class="scanner-content">
+                <div class="scanner-header">
+                    <h3>📷 Scanner de Código</h3>
+                    <button type="button" class="btn-close-scanner" id="btn-close-scanner">✕</button>
+                </div>
+                
+                <div class="scanner-controls">
+                    <button type="button" class="btn-scanner-control" id="btn-toggle-camera">
+                        🔄 Inverter
+                    </button>
+                    <button type="button" class="btn-scanner-control" id="btn-toggle-flash">
+                        💡 Flash
+                    </button>
+                </div>
+
+                <div id="reader"></div>
+                
+                <div class="scanner-status" id="scanner-status">
+                    📱 Posicione o código dentro do quadrado
+                </div>
+
+                <div class="scanner-history" id="scanner-history" style="display: none;">
+                    <div class="scanner-history-title">📋 Últimos códigos:</div>
+                    <div id="scanner-history-list"></div>
+                </div>
+            </div>
+        </div>
     `
 
     await carregarPatrimonios()
     
-    // Adicionar listener para teclas do carrossel
     document.addEventListener('keydown', handleCarrosselKeyboard)
     
-    // ✅ CONFIGURAR INTERCEPTAÇÃO DO BOTÃO VOLTAR
     configurarInterceptacaoVoltar()
+    
+    // ✅ CONFIGURAR SCANNER
+    document.getElementById('btn-open-scanner-lista').addEventListener('click', abrirScanner)
+    document.getElementById('btn-close-scanner').addEventListener('click', fecharScanner)
 }
 
 async function carregarPatrimonios() {
@@ -453,7 +554,6 @@ function renderPatrimonios(lista) {
         return
     }
 
-    // Função para gerar ícone de ordenação
     const getIconeOrdenacao = (campo) => {
         if (ordenacaoAtual.campo !== campo) {
             return '⇅'
@@ -517,7 +617,208 @@ function renderPatrimonios(lista) {
     `
 }
 
-window.iniciarScanner = iniciarScanner
+// ✅ FUNÇÕES DO SCANNER (IGUAL AO CADASTRO)
+async function abrirScanner() {
+    const modal = document.getElementById('scanner-modal')
+    modal.classList.add('active')
+    modalAberto = true
+
+    if (!window.Html5Qrcode) {
+        const script = document.createElement('script')
+        script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+        script.onload = iniciarScanner
+        document.head.appendChild(script)
+    } else {
+        iniciarScanner()
+    }
+}
+
+function iniciarScanner() {
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear()
+    }
+
+    const statusDiv = document.getElementById('scanner-status')
+    statusDiv.textContent = '⏳ Inicializando câmera...'
+    statusDiv.className = 'scanner-status scanning'
+
+    html5QrcodeScanner = new Html5Qrcode("reader")
+    
+    const cameraId = usandoCameraFrontal ? "user" : "environment"
+    
+    html5QrcodeScanner.start(
+        { facingMode: cameraId },
+        {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E
+            ]
+        },
+        onScanSuccess,
+        () => {}
+    ).then(() => {
+        statusDiv.textContent = '📱 Posicione o código dentro do quadrado'
+        statusDiv.className = 'scanner-status scanning'
+        
+        const videoElement = document.querySelector('#reader video')
+        if (videoElement && videoElement.srcObject) {
+            currentStream = videoElement.srcObject
+        }
+        
+        configurarControles()
+    }).catch(err => {
+        console.error('Erro ao iniciar scanner:', err)
+        statusDiv.textContent = '❌ Erro ao acessar câmera'
+        statusDiv.className = 'scanner-status'
+        alert('❌ Não foi possível acessar a câmera. Verifique as permissões.')
+        fecharScanner()
+    })
+}
+
+function configurarControles() {
+    document.getElementById('btn-toggle-camera').addEventListener('click', async () => {
+        usandoCameraFrontal = !usandoCameraFrontal
+        flashAtivo = false
+        await html5QrcodeScanner.stop()
+        iniciarScanner()
+    })
+
+    document.getElementById('btn-toggle-flash').addEventListener('click', async () => {
+        if (!currentStream) {
+            alert('⚠️ Flash não disponível')
+            return
+        }
+        
+        try {
+            const track = currentStream.getVideoTracks()[0]
+            const capabilities = track.getCapabilities()
+            
+            if (!capabilities.torch) {
+                alert('⚠️ Este dispositivo não possui flash/lanterna')
+                return
+            }
+            
+            flashAtivo = !flashAtivo
+            
+            await track.applyConstraints({
+                advanced: [{ torch: flashAtivo }]
+            })
+            
+            const btn = document.getElementById('btn-toggle-flash')
+            if (flashAtivo) {
+                btn.classList.add('active')
+                btn.textContent = '💡 Ligado'
+            } else {
+                btn.classList.remove('active')
+                btn.textContent = '💡 Flash'
+            }
+            
+        } catch (err) {
+            console.error('Erro ao ativar flash:', err)
+            alert('⚠️ Não foi possível ativar o flash')
+        }
+    })
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    console.log('✅ Código:', decodedText)
+    
+    if (navigator.vibrate) {
+        navigator.vibrate(200)
+    }
+    
+    playBeep()
+    
+    const apenasNumeros = decodedText.replace(/\D/g, '')
+    
+    if (apenasNumeros) {
+        const placaFormatada = apenasNumeros.slice(0, 10)
+        
+        const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        scanHistory.unshift({ codigo: decodedText, placa: placaFormatada, hora: agora })
+        if (scanHistory.length > 5) scanHistory.pop()
+        
+        atualizarHistorico()
+        
+        document.getElementById('busca-placa').value = placaFormatada
+        aplicarFiltros()
+        
+        fecharScanner()
+        
+    } else {
+        const statusDiv = document.getElementById('scanner-status')
+        statusDiv.textContent = '⚠️ Código sem números, tente novamente'
+        statusDiv.className = 'scanner-status'
+        setTimeout(() => {
+            statusDiv.textContent = '📱 Posicione o código dentro do quadrado'
+            statusDiv.className = 'scanner-status scanning'
+        }, 2000)
+    }
+}
+
+function atualizarHistorico() {
+    const historyDiv = document.getElementById('scanner-history')
+    const historyList = document.getElementById('scanner-history-list')
+    
+    if (scanHistory.length > 0) {
+        historyDiv.style.display = 'block'
+        historyList.innerHTML = scanHistory.map(item => 
+            `<div class="scanner-history-item">${item.hora} - ${item.codigo} → ${item.placa}</div>`
+        ).join('')
+    }
+}
+
+function playBeep() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+        oscillator.frequency.value = 1000
+        oscillator.type = 'sine'
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1)
+        
+        oscillator.start(audioContext.currentTime)
+        oscillator.stop(audioContext.currentTime + 0.1)
+    } catch (err) {
+        console.log('Som não disponível')
+    }
+}
+
+function fecharScanner() {
+    const modal = document.getElementById('scanner-modal')
+    modal.classList.remove('active')
+    modalAberto = false
+    
+    flashAtivo = false
+    const btnFlash = document.getElementById('btn-toggle-flash')
+    if (btnFlash) {
+        btnFlash.classList.remove('active')
+        btnFlash.textContent = '💡 Flash'
+    }
+    
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+            html5QrcodeScanner.clear()
+            html5QrcodeScanner = null
+            currentStream = null
+        }).catch(err => {
+            console.error('Erro ao parar scanner:', err)
+        })
+    }
+}
 
 window.ordenarPor = function(campo) {
     if (ordenacaoAtual.campo === campo) {
@@ -616,8 +917,8 @@ window.abrirDetalhesPatrimonio = async function(id) {
             <div style="padding: 20px;">
                 <p><strong>Placa:</strong> ${patrimonioAtual.placa}</p>
                 <p><strong>Nome:</strong> ${patrimonioAtual.nome}</p>
-                <p><strong>Estado:</strong> ${patrimonioAtual.estado || '-'}</p>
                 <p><strong>Descrição:</strong> ${patrimonioAtual.descricao || '-'}</p>
+                <p><strong>Estado:</strong> ${patrimonioAtual.estado || '-'}</p>
                 <p><strong>Valor Atual:</strong> ${formatarReal(patrimonioAtual.valor_atual)}</p>
                 <p><strong>Valor de Mercado:</strong> ${formatarReal(patrimonioAtual.valor_mercado)}</p>
                 <p><strong>Centro de Custo:</strong> ${patrimonioAtual.centro_custo?.nome || '-'}</p>
@@ -671,9 +972,7 @@ window.abrirDetalhesPatrimonio = async function(id) {
     }
 }
 
-// ✅ FUNÇÃO CORRIGIDA COM CACHE BUSTING
 window.abrirCarrossel = function(indiceInicial) {
-    // Preparar array de fotos disponíveis
     carrosselAtual.fotos = []
     
     if (patrimonioAtual.foto1_url) {
@@ -690,11 +989,9 @@ window.abrirCarrossel = function(indiceInicial) {
     
     carrosselAtual.indiceAtual = indiceInicial
     
-    // Mostrar modal
     modalAberto = true
     document.getElementById('modal-carrossel').style.display = 'flex'
     
-    // Atualizar carrossel
     atualizarCarrossel()
 }
 
@@ -706,7 +1003,6 @@ window.fecharCarrossel = function() {
 window.navegarCarrossel = function(direcao) {
     carrosselAtual.indiceAtual += direcao
     
-    // Loop circular
     if (carrosselAtual.indiceAtual < 0) {
         carrosselAtual.indiceAtual = carrosselAtual.fotos.length - 1
     } else if (carrosselAtual.indiceAtual >= carrosselAtual.fotos.length) {
@@ -717,14 +1013,11 @@ window.navegarCarrossel = function(direcao) {
 }
 
 function atualizarCarrossel() {
-    // Atualizar imagem
     document.getElementById('carrossel-imagem').src = carrosselAtual.fotos[carrosselAtual.indiceAtual]
     
-    // Atualizar contador
     document.getElementById('carrossel-contador').textContent = 
         `${carrosselAtual.indiceAtual + 1} / ${carrosselAtual.fotos.length}`
     
-    // Atualizar indicadores
     const indicadores = document.getElementById('carrossel-indicadores')
     indicadores.innerHTML = carrosselAtual.fotos.map((_, index) => 
         `<div style="width: 12px; height: 12px; border-radius: 50%; background: ${index === carrosselAtual.indiceAtual ? 'white' : 'rgba(255,255,255,0.4)'}; cursor: pointer; transition: all 0.3s;" onclick="irParaFoto(${index})"></div>`
