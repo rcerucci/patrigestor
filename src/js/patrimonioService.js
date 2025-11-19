@@ -14,8 +14,15 @@ function formatarPlaca(placa) {
         throw new Error('Placa deve conter números')
     }
     
-    const placaLimitada = apenasNumeros.slice(0, 4)
-    return placaLimitada.padStart(4, '0')
+    // Limitar a 10 dígitos
+    const placaLimitada = apenasNumeros.slice(0, 10)
+    
+    // Se tiver menos de 4 dígitos, preenche com zeros à esquerda
+    if (placaLimitada.length < 4) {
+        return placaLimitada.padStart(4, '0')
+    }
+    
+    return placaLimitada
 }
 
 // ✅ CORRIGIDO: Verificar placa duplicada (tratar erro 406)

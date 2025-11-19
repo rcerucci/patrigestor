@@ -12,6 +12,8 @@ let foto2File = null
 let foto3File = null
 let html5QrcodeScanner = null
 let usandoCameraFrontal = false
+let currentStream = null
+let flashAtivo = false
 
 export async function renderCadastroPatrimonio() {
     const user = await auth.getCurrentUser()
@@ -290,7 +292,7 @@ export async function renderCadastroPatrimonio() {
                                 value="${ultimoCadastro.placa || ''}" 
                                 required
                                 placeholder="0001"
-                                maxlength="4"
+                                maxlength="10"
                                 inputmode="numeric"
                                 pattern="[0-9]*"
                                 style="font-weight: bold; font-size: 16px;"
@@ -578,6 +580,13 @@ function iniciarScanner() {
     ).then(() => {
         statusDiv.textContent = '📱 Posicione o código dentro do quadrado'
         statusDiv.className = 'scanner-status scanning'
+        
+        // Capturar o stream de vídeo para controlar o flash
+        const videoElement = document.querySelector('#reader video')
+        if (videoElement && videoElement.srcObject) {
+            currentStream = videoElement.srcObject
+        }
+        
         configurarControles()
     }).catch(err => {
         console.error('Erro ao iniciar scanner:', err)
@@ -591,23 +600,44 @@ function iniciarScanner() {
 function configurarControles() {
     document.getElementById('btn-toggle-camera').addEventListener('click', async () => {
         usandoCameraFrontal = !usandoCameraFrontal
+        flashAtivo = false
         await html5QrcodeScanner.stop()
         iniciarScanner()
     })
 
     document.getElementById('btn-toggle-flash').addEventListener('click', async () => {
+        if (!currentStream) {
+            alert('⚠️ Flash não disponível')
+            return
+        }
+        
         try {
-            const track = html5QrcodeScanner.getRunningTrackCameraCapabilities()
-            if (track && track.torch) {
-                const btn = document.getElementById('btn-toggle-flash')
-                const isActive = btn.classList.contains('active')
-                await track.applyConstraints({
-                    advanced: [{ torch: !isActive }]
-                })
-                btn.classList.toggle('active')
+            const track = currentStream.getVideoTracks()[0]
+            const capabilities = track.getCapabilities()
+            
+            if (!capabilities.torch) {
+                alert('⚠️ Este dispositivo não possui flash/lanterna')
+                return
             }
+            
+            flashAtivo = !flashAtivo
+            
+            await track.applyConstraints({
+                advanced: [{ torch: flashAtivo }]
+            })
+            
+            const btn = document.getElementById('btn-toggle-flash')
+            if (flashAtivo) {
+                btn.classList.add('active')
+                btn.textContent = '💡 Ligado'
+            } else {
+                btn.classList.remove('active')
+                btn.textContent = '💡 Flash'
+            }
+            
         } catch (err) {
-            console.log('Flash não disponível neste dispositivo')
+            console.error('Erro ao ativar flash:', err)
+            alert('⚠️ Não foi possível ativar o flash')
         }
     })
 }
@@ -626,7 +656,8 @@ function onScanSuccess(decodedText, decodedResult) {
     const apenasNumeros = decodedText.replace(/\D/g, '')
     
     if (apenasNumeros) {
-        const placaFormatada = apenasNumeros.slice(0, 4).padStart(4, '0')
+        // Pegar até 10 dígitos (ou menos se tiver menos)
+        const placaFormatada = apenasNumeros.slice(0, 10)
         
         // Adicionar ao histórico
         const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -695,10 +726,19 @@ function fecharScanner() {
     const modal = document.getElementById('scanner-modal')
     modal.classList.remove('active')
     
+    // Resetar estado do flash
+    flashAtivo = false
+    const btnFlash = document.getElementById('btn-toggle-flash')
+    if (btnFlash) {
+        btnFlash.classList.remove('active')
+        btnFlash.textContent = '💡 Flash'
+    }
+    
     if (html5QrcodeScanner) {
         html5QrcodeScanner.stop().then(() => {
             html5QrcodeScanner.clear()
             html5QrcodeScanner = null
+            currentStream = null
         }).catch(err => {
             console.error('Erro ao parar scanner:', err)
         })
@@ -719,7 +759,12 @@ function validarPlaca(e) {
 function formatarPlaca(e) {
     let valor = e.target.value.replace(/\D/g, '')
     if (valor) {
-        e.target.value = valor.padStart(4, '0')
+        // Se tiver menos de 4 dígitos, preenche com zeros à esquerda
+        if (valor.length < 4) {
+            e.target.value = valor.padStart(4, '0')
+        } else {
+            e.target.value = valor
+        }
     }
 }
 
@@ -799,7 +844,11 @@ async function handleCadastro(e) {
 
     try {
         let placa = document.getElementById('placa').value.replace(/\D/g, '')
-        placa = placa.padStart(4, '0')
+        
+        // Se tiver menos de 4 dígitos, preenche com zeros
+        if (placa.length < 4) {
+            placa = placa.padStart(4, '0')
+        }
 
         UI.showLoading('cadastro-alert')
         const placaDuplicada = await patrimonioService.verificarPlacaDuplicada(placa)
