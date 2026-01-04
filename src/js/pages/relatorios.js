@@ -356,13 +356,17 @@ async function obterPatrimoniosFiltrados() {
     try {
         console.log('🔍 Buscando patrimônios...')
         
-        let patrimonios = await patrimonioService.listar()
-        console.log('📦 Total inicial:', patrimonios.length)
-        
-        // ✅ ADICIONAR ESTES LOGS:
-        console.log('📦 Total BRUTO retornado:', patrimonios?.length)
-        console.log('📦 Primeiro item:', patrimonios?.[0])
-        console.log('📦 Último item:', patrimonios?.[patrimonios.length - 1])
+        const { data: patrimonios, error } = await supabase
+            .from('patrimonios')
+            .select(`
+                *,
+                centro_custo:centro_de_custo(id, nome),
+                depreciacao:depreciacao(id, nome),
+                unidade:unidades(id, nome, cnpj, logo_url),
+                created_by_user:usuarios!patrimonios_created_by_fkey(nome)
+            `)
+            .order('created_at', { ascending: false })
+            .range(0, 99999)
         
         console.log('📦 Total inicial:', patrimonios.length)
         const tipoFiltro = document.querySelector('input[name="tipo_filtro"]:checked').value
