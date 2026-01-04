@@ -97,6 +97,7 @@ export const patrimonioService = {
                 created_by_user:usuarios!patrimonios_created_by_fkey(nome)
             `)
             .order('created_at', { ascending: false })
+            .range(0, 99999) // 🔥 remove o limite de 1000
 
         if (error) throw error
         return data
