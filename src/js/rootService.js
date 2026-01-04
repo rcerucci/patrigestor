@@ -157,6 +157,7 @@ export const rootService = {
                     const { data: patrimonios } = await supabase
                         .from('patrimonios')
                         .select('foto1_url, foto2_url, foto3_url')
+                        .range(0, 99999)
 
                     if (patrimonios) {
                         patrimonios.forEach(p => {
@@ -350,6 +351,7 @@ export const rootService = {
             const { data: patrimonios, error: patError } = await supabase
                 .from('patrimonios')
                 .select('foto1_url, foto2_url, foto3_url')
+                .range(0, 99999)
 
             if (patError) throw patError
 
@@ -532,6 +534,7 @@ export const rootService = {
                     depreciacao_cat:depreciacao(nome)
                 `)
                 .order('placa')
+                .range(0, 99999)
 
             if (patError) throw patError
             console.log(`✅ ${patrimonios?.length || 0} patrimônios encontrados`)
@@ -1096,6 +1099,7 @@ export const rootService = {
             const { data: patrimonios, error: fetchError } = await supabase
                 .from('patrimonios')
                 .select('id, placa, foto1_url, foto2_url, foto3_url')
+                .range(0, 99999)
 
             if (fetchError) throw fetchError
 
