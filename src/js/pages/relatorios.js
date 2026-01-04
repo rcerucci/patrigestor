@@ -355,6 +355,15 @@ function atualizarResumo() {
 async function obterPatrimoniosFiltrados() {
     try {
         console.log('🔍 Buscando patrimônios...')
+
+        let patrimonios = await patrimonioService.listar()
+        
+        // ✅ ADICIONAR ESTES LOGS:
+        console.log('📦 Total BRUTO retornado:', patrimonios?.length)
+        console.log('📦 Primeiro item:', patrimonios?.[0])
+        console.log('📦 Último item:', patrimonios?.[patrimonios.length - 1])
+        
+        console.log('📦 Total inicial:', patrimonios.length)        
         
         let patrimonios = await patrimonioService.listar()
         console.log('📦 Total inicial:', patrimonios.length)
