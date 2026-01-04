@@ -25,7 +25,7 @@ function formatarPlaca(placa) {
     return placaLimitada
 }
 
-// ✅ CORRIGIDO: Verificar placa duplicada (tratar erro 406)
+// ✅ Verificar placa duplicada
 async function verificarPlacaDuplicada(placa, idExcluir = null) {
     try {
         let query = supabase
@@ -37,21 +37,18 @@ async function verificarPlacaDuplicada(placa, idExcluir = null) {
             query = query.neq('id', idExcluir)
         }
         
-        // ✅ Usar .maybeSingle() ao invés de .single()
-        // maybeSingle() retorna null se não encontrar (sem erro 406)
         const { data, error } = await query.maybeSingle()
         
         if (error) {
             console.error('Erro ao verificar placa:', error)
-            return false // Em caso de erro, permite continuar
+            return false
         }
         
-        // Se data não é null, a placa existe
         return data !== null
         
     } catch (error) {
         console.error('Erro na verificação de placa:', error)
-        return false // Em caso de erro, permite continuar
+        return false
     }
 }
 
@@ -86,21 +83,49 @@ export const patrimonioService = {
         return data[0]
     },
 
+    // 🔥 MÉTODO ATUALIZADO - Busca TODOS os registros sem limite
     async listar() {
-        const { data, error } = await supabase
-            .from('patrimonios')
-            .select(`
-                *,
-                centro_custo:centro_de_custo(id, nome),
-                depreciacao:depreciacao(id, nome),
-                unidade:unidades(id, nome, cnpj, logo_url),
-                created_by_user:usuarios!patrimonios_created_by_fkey(nome)
-            `)
-            .order('created_at', { ascending: false })
-            .range(0, 99999) // 🔥 remove o limite de 1000
+        console.log('📦 Iniciando busca de patrimônios...')
+        
+        const allData = []
+        let from = 0
+        const batchSize = 1000 // Buscar em lotes de 1000
+        let hasMore = true
 
-        if (error) throw error
-        return data
+        while (hasMore) {
+            console.log(`🔍 Buscando lote: ${from} a ${from + batchSize - 1}`)
+            
+            const { data, error, count } = await supabase
+                .from('patrimonios')
+                .select(`
+                    *,
+                    centro_custo:centro_de_custo(id, nome),
+                    depreciacao:depreciacao(id, nome),
+                    unidade:unidades(id, nome, cnpj, logo_url),
+                    created_by_user:usuarios!patrimonios_created_by_fkey(nome)
+                `, { count: 'exact' })
+                .order('created_at', { ascending: false })
+                .range(from, from + batchSize - 1)
+
+            if (error) {
+                console.error('❌ Erro ao buscar patrimônios:', error)
+                throw error
+            }
+
+            console.log(`✅ Encontrados ${data.length} registros neste lote`)
+            
+            allData.push(...data)
+            
+            // Se retornou menos que o tamanho do lote, chegamos ao fim
+            if (data.length < batchSize) {
+                hasMore = false
+            } else {
+                from += batchSize
+            }
+        }
+
+        console.log(`🎯 Total de patrimônios carregados: ${allData.length}`)
+        return allData
     },
 
     async buscarPorId(id) {
